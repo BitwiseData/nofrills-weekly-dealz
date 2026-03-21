@@ -1,17 +1,32 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-// Public client (browser-safe)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Server-only admin client (bypasses RLS)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
 export const isSupabaseConfigured = () =>
   Boolean(supabaseUrl && supabaseAnonKey);
+
+// Lazy singletons — only instantiated when Supabase is configured
+let _supabase: SupabaseClient | null = null;
+let _supabaseAdmin: SupabaseClient | null = null;
+
+export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    if (!isSupabaseConfigured()) throw new Error("Supabase not configured");
+    if (!_supabase) _supabase = createClient(supabaseUrl, supabaseAnonKey);
+    return (_supabase as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});
+
+export const supabaseAdmin: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    if (!isSupabaseConfigured()) throw new Error("Supabase not configured");
+    const key = supabaseServiceKey || supabaseAnonKey;
+    if (!_supabaseAdmin) _supabaseAdmin = createClient(supabaseUrl, key);
+    return (_supabaseAdmin as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
