@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="115" fill="#003d28"/>
+  <text x="256" y="200" font-family="Arial Black, Arial, sans-serif" font-size="120" font-weight="900" text-anchor="middle" fill="#FFB800">Fair</text>
+  <text x="256" y="340" font-family="Arial Black, Arial, sans-serif" font-size="120" font-weight="900" text-anchor="middle" fill="#ffffff">Fare</text>
+  <text x="256" y="430" font-family="Arial, sans-serif" font-size="52" text-anchor="middle" fill="#91d520">🛒 Save More</text>
+</svg>
