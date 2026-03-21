@@ -1,5 +1,5 @@
 {
-  "name": "nofrills-weekly-dealz",
+  "name": "fair-fare",
   "functions": {
     "app/api/analyze-flyers/route.ts": {
       "maxDuration": 120
