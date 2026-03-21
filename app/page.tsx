@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { categories, searchDeals } from "@/lib/deals";
 import DealCard from "@/components/DealCard";
 import ChatDrawer from "@/components/ChatDrawer";
@@ -24,13 +25,22 @@ export default function Home() {
               <p className="text-xs" style={{ color: "#91d520" }}>Week 10 · 2026 Flyer Deals</p>
             </div>
           </div>
-          <button
-            onClick={() => setChatOpen(true)}
-            style={{ background: "#91d520", color: "#003d28" }}
-            className="flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity shadow"
-          >
-            <span>✨</span> Ask AI
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/flyer-analyzer"
+              style={{ background: "white", color: "#003d28" }}
+              className="flex items-center gap-1 px-3 py-2 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity shadow"
+            >
+              <span>📄</span> Flyer AI
+            </Link>
+            <button
+              onClick={() => setChatOpen(true)}
+              style={{ background: "#91d520", color: "#003d28" }}
+              className="flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity shadow"
+            >
+              <span>✨</span> Ask AI
+            </button>
+          </div>
         </div>
       </header>
 
