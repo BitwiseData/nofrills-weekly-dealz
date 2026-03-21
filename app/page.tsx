@@ -107,7 +107,7 @@ function PriceCard({ item }: { item: ItemData }) {
       <div className="px-5 pb-5 space-y-2">
         {sorted.map((s) => (
           <div key={s.store} className={`flex items-center justify-between rounded-xl px-3 py-2 ${s.store === best.store ? "ring-2" : "bg-gray-50"}`}
-            style={s.store === best.store ? { background: "#f0fdf4", ringColor: "#003d28" } : {}}>
+            style={s.store === best.store ? { background: "#f0fdf4" } : {}}>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STORE_COLORS[s.store] || "#9ca3af" }} />
               <span className="text-sm font-medium text-gray-700">{s.store}</span>
@@ -323,7 +323,7 @@ export default function Home() {
                 <div className="space-y-3">
                   {basketTotals.map((st, idx) => (
                     <div key={st.store} className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${idx === 0 ? "ring-2" : "bg-gray-50"}`}
-                      style={idx === 0 ? { background: "#f0fdf4", ringColor: "#003d28" } : {}}>
+                      style={idx === 0 ? { background: "#f0fdf4" } : {}}>
                       <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full" style={{ background: STORE_COLORS[st.store] || "#9ca3af" }} />
                         <span className="text-sm font-medium text-gray-700">{st.store}</span>
