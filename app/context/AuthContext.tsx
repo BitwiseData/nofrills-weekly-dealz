@@ -43,8 +43,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const ACCOUNTS_KEY = "flyercoins_accounts";
-const USER_KEY = "flyercoins_user";
+const ACCOUNTS_KEY = "fairfare_accounts";
+const USER_KEY = "fairfare_user";
 
 function saveToAccounts(user: User, password?: string) {
   const accounts = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "{}");

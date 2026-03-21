@@ -45,7 +45,7 @@ export default function DashboardPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {[
-            { label: "FlyerCoins Balance", value: user.coins.toLocaleString() + " 🪙", accent: "#FFB800", bg: "#fffbeb" },
+            { label: "Fair Fare Balance", value: user.coins.toLocaleString() + " 🪙", accent: "#FFB800", bg: "#fffbeb" },
             { label: "Total Coins Earned", value: totalCoinsEarned.toLocaleString() + " 🪙", accent: "#003d28", bg: "#f0fdf4" },
             { label: "Flyers Uploaded", value: totalUploads, accent: "#003d28", bg: "#f0fdf4" },
             { label: "Total Savings", value: "$" + savings, accent: "#059669", bg: "#f0fdf4" },
@@ -60,7 +60,7 @@ export default function DashboardPage() {
         {/* Coins progress */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm mb-8">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-gray-800">Your FlyerCoins</h2>
+            <h2 className="font-bold text-gray-800">Your Fair Fare</h2>
             <Link href="/shop" className="text-sm font-semibold" style={{ color: "#003d28" }}>Redeem in Shop →</Link>
           </div>
           <div className="flex items-end gap-2 mb-3">

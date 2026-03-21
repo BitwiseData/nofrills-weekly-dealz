@@ -27,7 +27,7 @@ export default function NavBar() {
             🪙
           </div>
           <span className="font-black text-xl tracking-tight" style={{ color: "#003d28" }}>
-            Flyer<span style={{ color: "#FFB800" }}>Coins</span>
+            Fair <span style={{ color: "#FFB800" }}>Fare</span>
           </span>
         </Link>
 

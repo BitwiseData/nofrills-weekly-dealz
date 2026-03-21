@@ -359,7 +359,7 @@ export default function SmartBasketPage() {
             {/* Earn coins CTA */}
             <div className="rounded-2xl p-6 text-center border-2 border-dashed" style={{ borderColor: "#d1fae5" }}>
               <p className="font-bold text-gray-700 mb-2">Have flyers from these stores?</p>
-              <p className="text-sm text-gray-500 mb-4">Upload them and earn 100 FlyerCoins per page. Our AI extracts all the deals!</p>
+              <p className="text-sm text-gray-500 mb-4">Upload them and earn 100 coins per page. Our AI extracts all the deals!</p>
               <Link href="/upload" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm" style={{ background: "#003d28" }}>
                 📄 Upload Flyers → Earn Coins
               </Link>

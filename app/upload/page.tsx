@@ -122,7 +122,7 @@ export default function UploadPage() {
         <div className="text-center mb-8">
           <div className="text-5xl mb-3">⬆️</div>
           <h1 className="text-3xl font-black text-gray-900">Upload Flyers, Earn Coins</h1>
-          <p className="text-gray-500 mt-2">Get <strong>{COINS_PER_PAGE} FlyerCoins per page</strong> for every grocery flyer you upload.</p>
+          <p className="text-gray-500 mt-2">Get <strong>{COINS_PER_PAGE} Fair Fare per page</strong> for every grocery flyer you upload.</p>
           <div className="inline-flex items-center gap-2 mt-3 bg-amber-50 border border-amber-200 rounded-full px-4 py-1.5 text-sm font-semibold" style={{ color: "#92400e" }}>
             🪙 Your balance: {user.coins.toLocaleString()} coins
           </div>
@@ -235,7 +235,7 @@ export default function UploadPage() {
           {done && totalEarned > 0 && (
             <div className="mt-5 rounded-xl p-5 text-center" style={{ background: "#f0fdf4", border: "2px solid #bbf7d0" }}>
               <div className="text-4xl mb-2">🎉</div>
-              <p className="font-black text-xl" style={{ color: "#003d28" }}>+{totalEarned.toLocaleString()} FlyerCoins earned!</p>
+              <p className="font-black text-xl" style={{ color: "#003d28" }}>+{totalEarned.toLocaleString()} Fair Fare earned!</p>
               <p className="text-sm text-gray-500 mt-1">Your new balance: <strong>{user.coins.toLocaleString()} 🪙</strong></p>
               <div className="flex gap-3 justify-center mt-4">
                 <Link href="/shop" className="px-5 py-2 rounded-xl font-bold text-white text-sm" style={{ background: "#003d28" }}>

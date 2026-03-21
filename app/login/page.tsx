@@ -36,7 +36,7 @@ export default function LoginPage() {
               🔑
             </div>
             <h1 className="text-2xl font-black text-gray-900">Welcome back</h1>
-            <p className="text-gray-500 text-sm mt-1">Log in to access your FlyerCoins</p>
+            <p className="text-gray-500 text-sm mt-1">Log in to access your Fair Fare</p>
           </div>
 
           {error && (

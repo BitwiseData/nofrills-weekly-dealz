@@ -85,7 +85,7 @@ export default function DealsPage() {
         {/* Upload CTA */}
         <div className="mt-12 rounded-2xl p-8 text-center border-2 border-dashed" style={{ borderColor: "#d1fae5" }}>
           <p className="text-xl font-black text-gray-700 mb-2">Have another store&apos;s flyer?</p>
-          <p className="text-sm text-gray-500 mb-5">Upload it and earn 100 FlyerCoins per page. Our AI will extract all the deals instantly.</p>
+          <p className="text-sm text-gray-500 mb-5">Upload it and earn 100 coins per page. Our AI will extract all the deals instantly.</p>
           <Link href="/upload" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm"
             style={{ background: "#003d28" }}>
             📄 Upload Flyer — Earn Coins →

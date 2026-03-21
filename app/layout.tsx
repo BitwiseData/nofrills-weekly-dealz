@@ -3,8 +3,8 @@ import "./globals.css";
 import { AuthProvider } from "@/app/context/AuthContext";
 
 export const metadata: Metadata = {
-  title: "FlyerCoins — Upload Flyers, Earn Coins, Save on Groceries",
-  description: "Upload grocery store flyer PDFs, earn FlyerCoins, compare prices at nearby stores, and redeem coins for real grocery savings.",
+  title: "Fair Fare — Upload Flyers, Earn Coins, Save on Groceries",
+  description: "Upload grocery store flyer PDFs, earn coins, compare prices at nearby stores, and redeem coins for real grocery savings.",
 };
 
 export default function RootLayout({

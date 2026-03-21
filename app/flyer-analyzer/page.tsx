@@ -492,7 +492,7 @@ export default function FlyerAnalyzer() {
       )}
 
       <footer style={{ background: "#003d28" }} className="mt-12 py-6 text-center">
-        <p className="text-sm" style={{ color: "#91d520" }}>No Frills Dealz · AI Flyer Analyzer</p>
+        <p className="text-sm" style={{ color: "#91d520" }}>Fair Fare · AI Flyer Analyzer</p>
         <p className="text-xs text-gray-400 mt-1">Prices extracted from flyers. Subject to change. While supplies last.</p>
       </footer>
     </div>

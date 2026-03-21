@@ -38,7 +38,7 @@ export default function SignupPage() {
               🪙
             </div>
             <h1 className="text-2xl font-black text-gray-900">Create your account</h1>
-            <p className="text-gray-500 text-sm mt-1">Get <strong className="text-amber-600">500 free FlyerCoins</strong> on signup</p>
+            <p className="text-gray-500 text-sm mt-1">Get <strong className="text-amber-600">500 free Fair Fare</strong> on signup</p>
           </div>
 
           {error && (

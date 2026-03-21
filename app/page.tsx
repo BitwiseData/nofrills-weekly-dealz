@@ -6,7 +6,7 @@ import { useAuth } from "@/app/context/AuthContext";
 
 const features = [
   { icon: "📄", title: "Upload Any Flyer", desc: "Upload weekly grocery flyer PDFs from any store. Our AI reads every page instantly." },
-  { icon: "🪙", title: "Earn FlyerCoins", desc: "Get 100 coins per PDF page uploaded. Stack them up and redeem for real grocery savings." },
+  { icon: "🪙", title: "Earn Fair Fare", desc: "Get 100 coins per PDF page uploaded. Stack them up and redeem for real grocery savings." },
   { icon: "🛒", title: "Smart Basket", desc: "Enter your shopping list. We find the cheapest prices across stores within 5 miles of you." },
   { icon: "🤖", title: "AI Deal Analysis", desc: "Claude AI extracts every deal, compares prices, and surfaces the best offers across all flyers." },
   { icon: "🛍️", title: "Redeem in Our Shop", desc: "Spend coins on groceries at checkout. No credit card needed — your uploads pay for your food." },
@@ -15,7 +15,7 @@ const features = [
 
 const steps = [
   { step: "01", icon: "📄", title: "Upload a Flyer PDF", desc: "Drag & drop any grocery store flyer. Works with No Frills, Walmart, Loblaws, Food Basics, and more." },
-  { step: "02", icon: "🪙", title: "Earn FlyerCoins", desc: "Get 100 coins per page uploaded. Welcome bonus: 500 free coins on signup. No limits on uploads." },
+  { step: "02", icon: "🪙", title: "Earn Fair Fare", desc: "Get 100 coins per page uploaded. Welcome bonus: 500 free coins on signup. No limits on uploads." },
   { step: "03", icon: "🛍️", title: "Redeem for Groceries", desc: "Use your coins to get items from our shop at a fraction of the retail price. Coins never expire." },
 ];
 
@@ -54,7 +54,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Upload any grocery store flyer PDF and our AI extracts every deal instantly. Earn FlyerCoins, compare prices near you, and redeem coins for real groceries.
+            Upload any grocery store flyer PDF and our AI extracts every deal instantly. Earn Fair Fare, compare prices near you, and redeem coins for real groceries.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -231,7 +231,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="text-xl">🪙</span>
-            <span className="font-black text-lg" style={{ color: "#003d28" }}>Flyer<span style={{ color: "#FFB800" }}>Coins</span></span>
+            <span className="font-black text-lg" style={{ color: "#003d28" }}>Fair <span style={{ color: "#FFB800" }}>Fare</span></span>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center text-sm text-gray-400">
             <Link href="/deals" className="hover:text-gray-700">Deals</Link>
@@ -240,7 +240,7 @@ export default function LandingPage() {
             <Link href="/smart-basket" className="hover:text-gray-700">Price Compare</Link>
             <Link href="/flyer-analyzer" className="hover:text-gray-700">Flyer AI</Link>
           </div>
-          <p className="text-xs text-gray-300">© 2026 FlyerCoins. All rights reserved.</p>
+          <p className="text-xs text-gray-300">© 2026 Fair Fare. All rights reserved.</p>
         </div>
       </footer>
     </div>
