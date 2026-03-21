@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import NavBar from "@/app/components/NavBar";
 
@@ -130,11 +130,28 @@ export default function Home() {
   const [results, setResults] = useState<ItemData[] | null>(null);
   const [basket, setBasket] = useState<string[]>(DEFAULT_BASKET);
   const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState<"US" | "CA">("US");
+  const [countryDetected, setCountryDetected] = useState(false);
+
+  useEffect(() => {
+    fetch("https://ipapi.co/json/")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.country_code === "CA") setCountry("CA");
+        else setCountry("US");
+        setCountryDetected(true);
+      })
+      .catch(() => setCountryDetected(true)); // default US on error
+  }, []);
+
+  const flippLocale = country === "CA" ? "en-ca" : "en-us";
+  const countryLabel = country === "CA" ? "🇨🇦 Canada" : "🇺🇸 United States";
+  const postalPlaceholder = country === "CA" ? "e.g. M5V 3A8 or K1A 0A9" : "e.g. 91743 or 10001";
 
   const openFlipp = () => {
     const code = postalCode.trim();
     if (!code) return;
-    window.open(`https://flipp.com/en-us/weekly_ads/groceries?postal_code=${encodeURIComponent(code)}`, "_blank", "noopener,noreferrer");
+    window.open(`https://flipp.com/${flippLocale}/weekly_ads/groceries?postal_code=${encodeURIComponent(code)}`, "_blank", "noopener,noreferrer");
   };
 
   const handleSearch = (q: string) => {
@@ -180,7 +197,7 @@ export default function Home() {
         <div className="max-w-5xl mx-auto px-4 pt-20 pb-10 text-center relative">
           <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold mb-7 border"
             style={{ background: "#f0fdf4", borderColor: "#bbf7d0", color: "#166534" }}>
-            🍁 Updated weekly · Canadian grocery prices
+            {country === "CA" ? "🍁" : "🦅"} Updated weekly · {country === "CA" ? "Canadian" : "US"} grocery prices
           </div>
 
           <h1 className="text-5xl sm:text-6xl font-black tracking-tight text-gray-900 mb-5 leading-tight">
@@ -253,14 +270,36 @@ export default function Home() {
         <div className="max-w-3xl mx-auto px-4 text-center">
           <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#003d28" }}>Weekly Flyers</span>
           <h2 className="text-2xl font-black text-gray-900 mt-2 mb-2">Browse this week&apos;s grocery ads</h2>
-          <p className="text-gray-500 text-sm mb-6">Enter your ZIP or postal code to see all current flyers near you on Flipp.</p>
+          <p className="text-gray-500 text-sm mb-4">Enter your ZIP or postal code to see all current flyers near you on Flipp.</p>
+
+          {/* Country selector */}
+          <div className="flex items-center justify-center gap-2 mb-5">
+            <span className="text-xs text-gray-400">
+              {countryDetected ? "Detected location:" : "Detecting location…"}
+            </span>
+            <div className="flex rounded-xl border border-gray-200 overflow-hidden text-xs font-bold">
+              <button
+                onClick={() => setCountry("US")}
+                className={`px-3 py-1.5 transition-colors ${country === "US" ? "text-white" : "text-gray-500 hover:bg-gray-50"}`}
+                style={country === "US" ? { background: "#003d28" } : {}}>
+                🇺🇸 USA
+              </button>
+              <button
+                onClick={() => setCountry("CA")}
+                className={`px-3 py-1.5 transition-colors border-l border-gray-200 ${country === "CA" ? "text-white" : "text-gray-500 hover:bg-gray-50"}`}
+                style={country === "CA" ? { background: "#003d28" } : {}}>
+                🇨🇦 Canada
+              </button>
+            </div>
+          </div>
+
           <div className="flex gap-2 max-w-sm mx-auto">
             <input
               type="text"
               value={postalCode}
               onChange={(e) => setPostalCode(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && openFlipp()}
-              placeholder="e.g. 91743 or M5V 3A8"
+              placeholder={postalPlaceholder}
               maxLength={10}
               className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent text-gray-900 placeholder-gray-400"
             />
@@ -273,7 +312,9 @@ export default function Home() {
               View Flyers →
             </button>
           </div>
-          <p className="text-xs text-gray-400 mt-3">Opens weekly ads on Flipp.com in a new tab</p>
+          <p className="text-xs text-gray-400 mt-3">
+            Showing {countryLabel} flyers on Flipp.com · Opens in a new tab
+          </p>
         </div>
       </section>
 
