@@ -16,6 +16,7 @@ export default function NavBar() {
     { href: "/smart-basket",  label: "Price Compare",icon: "🛒" },
     { href: "/shop",          label: "Shop",         icon: "🛍️" },
     { href: "/upload",        label: "Upload",       icon: "⬆️" },
+    ...(user?.isAdmin ? [{ href: "/admin", label: "Admin", icon: "🛡️" }] : []),
   ];
 
   return (

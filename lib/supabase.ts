@@ -30,6 +30,28 @@ export const supabaseAdmin: SupabaseClient = new Proxy({} as SupabaseClient, {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface DbProfile {
+  id: string;
+  display_name: string | null;
+  username: string | null;
+  is_admin: boolean;
+  coins: number;
+  created_at: string;
+}
+
+export interface DbFlyerUpload {
+  id: string;
+  user_id: string | null;
+  file_name: string;
+  file_size_bytes: number | null;
+  store_name: string | null;
+  country: string | null;
+  status: string;
+  deals_found: number;
+  completed_at: string | null;
+  created_at: string;
+}
+
 export interface DbProduct {
   id: string;
   name: string;

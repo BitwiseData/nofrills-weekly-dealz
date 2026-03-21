@@ -17,11 +17,11 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const ok = await login(form.email, form.password);
+    const { ok, error: errMsg } = await login(form.email, form.password);
     if (ok) {
       router.push("/dashboard");
     } else {
-      setError("Invalid email or password. Please try again.");
+      setError(errMsg || "Invalid email or password. Please try again.");
       setLoading(false);
     }
   };

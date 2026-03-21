@@ -1,6 +1,9 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+// ─── Types ─────────────────────────────────────────────────────────────────
 
 export interface UploadRecord {
   id: string;
@@ -23,6 +26,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  isAdmin: boolean;
   coins: number;
   uploads: UploadRecord[];
   purchases: PurchaseRecord[];
@@ -32,91 +36,199 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  signup: (name: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
   addCoins: (coins: number) => void;
   addUpload: (record: UploadRecord) => void;
-  spendCoins: (coins: number, itemName: string) => string | false; // returns redeem code or false
+  spendCoins: (coins: number, itemName: string) => string | false;
   isLoading: boolean;
+  getAccessToken: () => Promise<string | null>;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+// ─── Supabase client (lazy, only when env vars available) ──────────────────
+
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
+
+// ─── localStorage fallback keys (used when Supabase not configured) ────────
 
 const ACCOUNTS_KEY = "fairfare_accounts";
 const USER_KEY = "fairfare_user";
 
-function saveToAccounts(user: User, password?: string) {
-  const accounts = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "{}");
-  if (!accounts[user.email]) accounts[user.email] = {};
-  accounts[user.email].user = user;
-  if (password) accounts[user.email].password = password;
-  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
-}
+// ─── Context ───────────────────────────────────────────────────────────────
+
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(USER_KEY);
-      if (stored) setUser(JSON.parse(stored));
-    } catch {}
-    setIsLoading(false);
-  }, []);
+  // ── Supabase helpers ─────────────────────────────────────────────────────
 
-  const persist = (u: User) => {
-    setUser(u);
-    localStorage.setItem(USER_KEY, JSON.stringify(u));
-    saveToAccounts(u);
-  };
+  async function fetchProfile(userId: string, supabase: ReturnType<typeof createClient>) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("display_name, is_admin, coins, created_at")
+      .eq("id", userId)
+      .single();
+    return data;
+  }
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    const accounts = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "{}");
-    const account = accounts[email];
-    if (account && account.password === password) {
-      persist(account.user);
-      return true;
-    }
-    return false;
-  };
-
-  const signup = async (name: string, email: string, password: string): Promise<boolean> => {
-    const accounts = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "{}");
-    if (accounts[email]) return false;
-    const newUser: User = {
-      id: Date.now().toString(),
-      name,
-      email,
-      coins: 500, // welcome bonus
+  async function buildUser(supabaseUser: { id: string; email?: string; created_at?: string; user_metadata?: Record<string, string> }, supabase: ReturnType<typeof createClient>): Promise<User> {
+    const profile = await fetchProfile(supabaseUser.id, supabase);
+    return {
+      id: supabaseUser.id,
+      name: profile?.display_name || supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "User",
+      email: supabaseUser.email || "",
+      isAdmin: profile?.is_admin ?? false,
+      coins: profile?.coins ?? 500,
       uploads: [],
       purchases: [],
-      joinedAt: new Date().toISOString(),
-      referralCode: Math.random().toString(36).slice(2, 8).toUpperCase(),
+      joinedAt: supabaseUser.created_at || new Date().toISOString(),
+      referralCode: supabaseUser.id.slice(-6).toUpperCase(),
     };
-    saveToAccounts(newUser, password);
-    persist(newUser);
-    return true;
+  }
+
+  // ── Initialize auth ───────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+
+    if (!supabase) {
+      // localStorage fallback
+      try {
+        const stored = localStorage.getItem(USER_KEY);
+        if (stored) setUser({ ...JSON.parse(stored), isAdmin: false });
+      } catch {}
+      setIsLoading(false);
+      return;
+    }
+
+    // Check existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const u = await buildUser(session.user, supabase);
+        setUser(u);
+      }
+      setIsLoading(false);
+    });
+
+    // Listen for auth state changes (login / logout / token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const u = await buildUser(session.user, supabase);
+        setUser(u);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Auth methods ──────────────────────────────────────────────────────────
+
+  const login = async (email: string, password: string): Promise<{ ok: boolean; error?: string }> => {
+    const supabase = getSupabaseClient();
+
+    if (!supabase) {
+      // localStorage fallback
+      const accounts = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "{}");
+      const account = accounts[email];
+      if (account && account.password === password) {
+        const u = { ...account.user, isAdmin: false };
+        setUser(u);
+        localStorage.setItem(USER_KEY, JSON.stringify(u));
+        return { ok: true };
+      }
+      return { ok: false, error: "Invalid email or password." };
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
   };
 
-  const logout = () => {
+  const signup = async (name: string, email: string, password: string): Promise<{ ok: boolean; error?: string }> => {
+    const supabase = getSupabaseClient();
+
+    if (!supabase) {
+      // localStorage fallback
+      const accounts = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "{}");
+      if (accounts[email]) return { ok: false, error: "An account with this email already exists." };
+      const newUser: User = {
+        id: Date.now().toString(),
+        name,
+        email,
+        isAdmin: false,
+        coins: 500,
+        uploads: [],
+        purchases: [],
+        joinedAt: new Date().toISOString(),
+        referralCode: Math.random().toString(36).slice(2, 8).toUpperCase(),
+      };
+      accounts[email] = { user: newUser, password };
+      localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+      setUser(newUser);
+      localStorage.setItem(USER_KEY, JSON.stringify(newUser));
+      return { ok: true };
+    }
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    });
+
+    if (error) return { ok: false, error: error.message };
+    // onAuthStateChange will set user automatically after email confirm (or immediately if email confirm disabled)
+    return { ok: true };
+  };
+
+  const logout = async () => {
+    const supabase = getSupabaseClient();
+    if (supabase) await supabase.auth.signOut();
     setUser(null);
     localStorage.removeItem(USER_KEY);
   };
 
+  const getAccessToken = async (): Promise<string | null> => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return null;
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  };
+
+  // ── Coin / upload helpers ─────────────────────────────────────────────────
+
+  async function syncCoins(userId: string, newCoins: number) {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    await supabase.from("profiles").update({ coins: newCoins }).eq("id", userId);
+  }
+
   const addCoins = (coins: number) => {
     if (!user) return;
-    persist({ ...user, coins: user.coins + coins });
+    const updated = { ...user, coins: user.coins + coins };
+    setUser(updated);
+    syncCoins(updated.id, updated.coins);
   };
 
   const addUpload = (record: UploadRecord) => {
     if (!user) return;
-    persist({
+    const updated = {
       ...user,
       coins: user.coins + record.pointsEarned,
       uploads: [record, ...user.uploads],
-    });
+    };
+    setUser(updated);
+    syncCoins(updated.id, updated.coins);
   };
 
   const spendCoins = (coins: number, itemName: string): string | false => {
@@ -129,16 +241,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       purchasedAt: new Date().toISOString(),
       redeemCode,
     };
-    persist({
+    const updated = {
       ...user,
       coins: user.coins - coins,
       purchases: [purchase, ...user.purchases],
-    });
+    };
+    setUser(updated);
+    syncCoins(updated.id, updated.coins);
     return redeemCode;
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, addCoins, addUpload, spendCoins, isLoading }}>
+    <AuthContext.Provider
+      value={{ user, login, signup, logout, addCoins, addUpload, spendCoins, isLoading, getAccessToken }}
+    >
       {children}
     </AuthContext.Provider>
   );

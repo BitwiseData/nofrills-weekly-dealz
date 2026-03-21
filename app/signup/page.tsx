@@ -18,11 +18,11 @@ export default function SignupPage() {
     setError("");
     if (form.password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setLoading(true);
-    const ok = await signup(form.name, form.email, form.password);
+    const { ok, error: errMsg } = await signup(form.name, form.email, form.password);
     if (ok) {
       router.push("/dashboard");
     } else {
-      setError("An account with this email already exists.");
+      setError(errMsg || "An account with this email already exists.");
       setLoading(false);
     }
   };
