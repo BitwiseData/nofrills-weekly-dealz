@@ -4,94 +4,164 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import NavBar from "@/app/components/NavBar";
 
-// ── Mock Price Database ────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────────
 interface StorePrice { store: string; price: number; display: string; }
 interface ItemData { name: string; unit: string; stores: StorePrice[]; emoji: string; }
+interface TrendRow { week: string; s1: number; s2: number; s3: number; }
 
-const ITEMS: Record<string, ItemData> = {
-  milk:       { name: "Milk",           unit: "2 L",       emoji: "🥛", stores: [
-    { store: "No Frills", price: 3.99, display: "$3.99" },
-    { store: "Walmart",   price: 4.49, display: "$4.49" },
-    { store: "Loblaws",   price: 5.29, display: "$5.29" },
+// ── Canada Price Database (No Frills · Walmart · Loblaws) ─────────────────────
+const ITEMS_CA: Record<string, ItemData> = {
+  milk:    { name: "Milk",           unit: "2 L",        emoji: "🥛", stores: [
+    { store: "No Frills", price: 3.99,  display: "$3.99"  },
+    { store: "Walmart",   price: 4.49,  display: "$4.49"  },
+    { store: "Loblaws",   price: 5.29,  display: "$5.29"  },
   ]},
-  eggs:       { name: "Eggs",           unit: "12 pack",   emoji: "🥚", stores: [
-    { store: "No Frills", price: 3.49, display: "$3.49" },
-    { store: "Walmart",   price: 3.97, display: "$3.97" },
-    { store: "Loblaws",   price: 4.79, display: "$4.79" },
+  eggs:    { name: "Eggs",           unit: "12 pack",    emoji: "🥚", stores: [
+    { store: "No Frills", price: 3.49,  display: "$3.49"  },
+    { store: "Walmart",   price: 3.97,  display: "$3.97"  },
+    { store: "Loblaws",   price: 4.79,  display: "$4.79"  },
   ]},
-  bread:      { name: "Bread",          unit: "675 g loaf",emoji: "🍞", stores: [
-    { store: "Walmart",   price: 2.97, display: "$2.97" },
-    { store: "No Frills", price: 3.19, display: "$3.19" },
-    { store: "Loblaws",   price: 3.99, display: "$3.99" },
+  bread:   { name: "Bread",          unit: "675 g loaf", emoji: "🍞", stores: [
+    { store: "Walmart",   price: 2.97,  display: "$2.97"  },
+    { store: "No Frills", price: 3.19,  display: "$3.19"  },
+    { store: "Loblaws",   price: 3.99,  display: "$3.99"  },
   ]},
-  bananas:    { name: "Bananas",        unit: "per kg",    emoji: "🍌", stores: [
-    { store: "No Frills", price: 1.49, display: "$1.49" },
-    { store: "Walmart",   price: 1.67, display: "$1.67" },
-    { store: "Loblaws",   price: 1.99, display: "$1.99" },
+  bananas: { name: "Bananas",        unit: "per kg",     emoji: "🍌", stores: [
+    { store: "No Frills", price: 1.49,  display: "$1.49"  },
+    { store: "Walmart",   price: 1.67,  display: "$1.67"  },
+    { store: "Loblaws",   price: 1.99,  display: "$1.99"  },
   ]},
-  chicken:    { name: "Chicken Breast", unit: "per kg",    emoji: "🍗", stores: [
-    { store: "Walmart",   price: 9.97, display: "$9.97" },
+  chicken: { name: "Chicken Breast", unit: "per kg",     emoji: "🍗", stores: [
+    { store: "Walmart",   price: 9.97,  display: "$9.97"  },
     { store: "No Frills", price: 10.99, display: "$10.99" },
     { store: "Loblaws",   price: 13.49, display: "$13.49" },
   ]},
-  butter:     { name: "Butter",         unit: "454 g",     emoji: "🧈", stores: [
-    { store: "No Frills", price: 5.49, display: "$5.49" },
-    { store: "Walmart",   price: 5.97, display: "$5.97" },
-    { store: "Loblaws",   price: 6.99, display: "$6.99" },
+  butter:  { name: "Butter",         unit: "454 g",      emoji: "🧈", stores: [
+    { store: "No Frills", price: 5.49,  display: "$5.49"  },
+    { store: "Walmart",   price: 5.97,  display: "$5.97"  },
+    { store: "Loblaws",   price: 6.99,  display: "$6.99"  },
   ]},
-  pasta:      { name: "Pasta",          unit: "900 g",     emoji: "🍝", stores: [
-    { store: "Walmart",   price: 2.47, display: "$2.47" },
-    { store: "No Frills", price: 2.79, display: "$2.79" },
-    { store: "Loblaws",   price: 3.49, display: "$3.49" },
+  pasta:   { name: "Pasta",          unit: "900 g",      emoji: "🍝", stores: [
+    { store: "Walmart",   price: 2.47,  display: "$2.47"  },
+    { store: "No Frills", price: 2.79,  display: "$2.79"  },
+    { store: "Loblaws",   price: 3.49,  display: "$3.49"  },
   ]},
-  apples:     { name: "Apples",         unit: "3 lb bag",  emoji: "🍎", stores: [
-    { store: "No Frills", price: 4.99, display: "$4.99" },
-    { store: "Walmart",   price: 5.47, display: "$5.47" },
-    { store: "Loblaws",   price: 6.29, display: "$6.29" },
+  apples:  { name: "Apples",         unit: "3 lb bag",   emoji: "🍎", stores: [
+    { store: "No Frills", price: 4.99,  display: "$4.99"  },
+    { store: "Walmart",   price: 5.47,  display: "$5.47"  },
+    { store: "Loblaws",   price: 6.29,  display: "$6.29"  },
   ]},
-  cheese:     { name: "Cheddar Cheese", unit: "400 g",     emoji: "🧀", stores: [
-    { store: "Walmart",   price: 5.97, display: "$5.97" },
-    { store: "No Frills", price: 6.49, display: "$6.49" },
-    { store: "Loblaws",   price: 7.99, display: "$7.99" },
+  cheese:  { name: "Cheddar Cheese", unit: "400 g",      emoji: "🧀", stores: [
+    { store: "Walmart",   price: 5.97,  display: "$5.97"  },
+    { store: "No Frills", price: 6.49,  display: "$6.49"  },
+    { store: "Loblaws",   price: 7.99,  display: "$7.99"  },
   ]},
-  rice:       { name: "White Rice",     unit: "2 kg",      emoji: "🍚", stores: [
-    { store: "No Frills", price: 4.49, display: "$4.49" },
-    { store: "Walmart",   price: 4.97, display: "$4.97" },
-    { store: "Loblaws",   price: 5.99, display: "$5.99" },
+  rice:    { name: "White Rice",     unit: "2 kg",       emoji: "🍚", stores: [
+    { store: "No Frills", price: 4.49,  display: "$4.49"  },
+    { store: "Walmart",   price: 4.97,  display: "$4.97"  },
+    { store: "Loblaws",   price: 5.99,  display: "$5.99"  },
   ]},
 };
 
+// ── USA Price Database (Walmart · Target · Kroger) ────────────────────────────
+const ITEMS_US: Record<string, ItemData> = {
+  milk:    { name: "Milk",           unit: "1 gallon",   emoji: "🥛", stores: [
+    { store: "Kroger",  price: 3.49,  display: "$3.49"  },
+    { store: "Walmart", price: 3.78,  display: "$3.78"  },
+    { store: "Target",  price: 4.19,  display: "$4.19"  },
+  ]},
+  eggs:    { name: "Eggs",           unit: "12 count",   emoji: "🥚", stores: [
+    { store: "Kroger",  price: 2.79,  display: "$2.79"  },
+    { store: "Walmart", price: 2.97,  display: "$2.97"  },
+    { store: "Target",  price: 3.49,  display: "$3.49"  },
+  ]},
+  bread:   { name: "Bread",          unit: "20 oz loaf", emoji: "🍞", stores: [
+    { store: "Walmart", price: 1.98,  display: "$1.98"  },
+    { store: "Kroger",  price: 2.29,  display: "$2.29"  },
+    { store: "Target",  price: 2.49,  display: "$2.49"  },
+  ]},
+  bananas: { name: "Bananas",        unit: "per lb",     emoji: "🍌", stores: [
+    { store: "Walmart", price: 0.57,  display: "$0.57"  },
+    { store: "Kroger",  price: 0.59,  display: "$0.59"  },
+    { store: "Target",  price: 0.69,  display: "$0.69"  },
+  ]},
+  chicken: { name: "Chicken Breast", unit: "per lb",     emoji: "🍗", stores: [
+    { store: "Kroger",  price: 3.79,  display: "$3.79"  },
+    { store: "Walmart", price: 3.97,  display: "$3.97"  },
+    { store: "Target",  price: 4.99,  display: "$4.99"  },
+  ]},
+  butter:  { name: "Butter",         unit: "1 lb",       emoji: "🧈", stores: [
+    { store: "Kroger",  price: 3.79,  display: "$3.79"  },
+    { store: "Walmart", price: 3.97,  display: "$3.97"  },
+    { store: "Target",  price: 4.49,  display: "$4.49"  },
+  ]},
+  pasta:   { name: "Pasta",          unit: "16 oz",      emoji: "🍝", stores: [
+    { store: "Walmart", price: 1.28,  display: "$1.28"  },
+    { store: "Kroger",  price: 1.49,  display: "$1.49"  },
+    { store: "Target",  price: 1.79,  display: "$1.79"  },
+  ]},
+  apples:  { name: "Apples",         unit: "3 lb bag",   emoji: "🍎", stores: [
+    { store: "Walmart", price: 3.97,  display: "$3.97"  },
+    { store: "Kroger",  price: 4.19,  display: "$4.19"  },
+    { store: "Target",  price: 4.49,  display: "$4.49"  },
+  ]},
+  cheese:  { name: "Cheddar Cheese", unit: "8 oz",       emoji: "🧀", stores: [
+    { store: "Kroger",  price: 2.79,  display: "$2.79"  },
+    { store: "Walmart", price: 2.97,  display: "$2.97"  },
+    { store: "Target",  price: 3.49,  display: "$3.49"  },
+  ]},
+  rice:    { name: "White Rice",     unit: "5 lb",       emoji: "🍚", stores: [
+    { store: "Kroger",  price: 4.49,  display: "$4.49"  },
+    { store: "Walmart", price: 4.97,  display: "$4.97"  },
+    { store: "Target",  price: 5.99,  display: "$5.99"  },
+  ]},
+};
+
+const STORES_CA = ["No Frills", "Walmart", "Loblaws"];
+const STORES_US = ["Walmart", "Target", "Kroger"];
+
+// 4-week milk price trend
+const TREND_CA: TrendRow[] = [
+  { week: "Wk 10", s1: 3.79, s2: 4.29, s3: 5.09 },
+  { week: "Wk 11", s1: 3.89, s2: 4.39, s3: 5.19 },
+  { week: "Wk 12", s1: 3.99, s2: 4.49, s3: 5.29 },
+  { week: "Wk 13", s1: 3.99, s2: 4.59, s3: 5.49 },
+];
+const TREND_CA_STORES = ["No Frills", "Walmart", "Loblaws"];
+
+const TREND_US: TrendRow[] = [
+  { week: "Wk 10", s1: 3.39, s2: 3.68, s3: 4.09 },
+  { week: "Wk 11", s1: 3.45, s2: 3.73, s3: 4.14 },
+  { week: "Wk 12", s1: 3.49, s2: 3.78, s3: 4.19 },
+  { week: "Wk 13", s1: 3.49, s2: 3.88, s3: 4.29 },
+];
+const TREND_US_STORES = ["Kroger", "Walmart", "Target"];
+
 const QUICK_SEARCHES = ["milk", "eggs", "bread", "chicken", "cheese"];
-const DEFAULT_BASKET = ["milk", "eggs", "bread", "bananas", "chicken"];
 const ALL_BASKET_KEYS = ["milk", "eggs", "bread", "bananas", "chicken", "butter", "pasta", "apples"];
-const STORES = ["No Frills", "Walmart", "Loblaws"];
+const DEFAULT_BASKET  = ["milk", "eggs", "bread", "bananas", "chicken"];
 
 const DATA_HEALTH = [
-  { value: "47",    label: "Flyers indexed",       sub: "this week",     icon: "📄", color: "#003d28" },
-  { value: "High",  label: "Produce volatility",   sub: "↑ 12% vs last week", icon: "📈", color: "#d97706" },
-  { value: "11%",   label: "Avg. savings found",   sub: "across basket", icon: "💰", color: "#059669" },
-  { value: "2h",    label: "Last data refresh",    sub: "prices current",icon: "🔄", color: "#6366f1" },
-];
-
-const PRICE_TREND = [
-  { week: "Wk 10", nofrills: 3.79, walmart: 4.29, loblaws: 5.09 },
-  { week: "Wk 11", nofrills: 3.89, walmart: 4.39, loblaws: 5.19 },
-  { week: "Wk 12", nofrills: 3.99, walmart: 4.49, loblaws: 5.29 },
-  { week: "Wk 13", nofrills: 3.99, walmart: 4.59, loblaws: 5.49 },
+  { value: "47",   label: "Flyers indexed",     sub: "this week",          icon: "📄", color: "#003d28" },
+  { value: "High", label: "Produce volatility",  sub: "↑ 12% vs last week", icon: "📈", color: "#d97706" },
+  { value: "11%",  label: "Avg. savings found",  sub: "across basket",      icon: "💰", color: "#059669" },
+  { value: "2h",   label: "Last data refresh",   sub: "prices current",     icon: "🔄", color: "#6366f1" },
 ];
 
 const STORE_COLORS: Record<string, string> = {
   "No Frills": "#FFB800",
   "Walmart":   "#0071CE",
   "Loblaws":   "#d62b1f",
+  "Target":    "#CC0000",
+  "Kroger":    "#004990",
 };
 
-// ── PriceCard component ─────────────────────────────────────────────────────
+// ── PriceCard component ──────────────────────────────────────────────────────
 function PriceCard({ item }: { item: ItemData }) {
   const sorted = [...item.stores].sort((a, b) => a.price - b.price);
-  const best = sorted[0];
-  const worst = sorted[sorted.length - 1];
-  const saved = (worst.price - best.price).toFixed(2);
+  const best   = sorted[0];
+  const worst  = sorted[sorted.length - 1];
+  const saved  = (worst.price - best.price).toFixed(2);
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-5 pt-5 pb-3 flex items-center gap-3">
@@ -106,15 +176,17 @@ function PriceCard({ item }: { item: ItemData }) {
       </div>
       <div className="px-5 pb-5 space-y-2">
         {sorted.map((s) => (
-          <div key={s.store} className={`flex items-center justify-between rounded-xl px-3 py-2 ${s.store === best.store ? "ring-2" : "bg-gray-50"}`}
+          <div key={s.store}
+            className={`flex items-center justify-between rounded-xl px-3 py-2 ${s.store === best.store ? "ring-2" : "bg-gray-50"}`}
             style={s.store === best.store ? { background: "#f0fdf4" } : {}}>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STORE_COLORS[s.store] || "#9ca3af" }} />
               <span className="text-sm font-medium text-gray-700">{s.store}</span>
-              {s.store === best.store && <span className="text-xs font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: "#003d28" }}>Best</span>}
+              {s.store === best.store && (
+                <span className="text-xs font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: "#003d28" }}>Best</span>
+              )}
             </div>
-            <span className={`font-black text-sm ${s.store === best.store ? "" : "text-gray-500"}`}
-              style={s.store === best.store ? { color: "#003d28" } : {}}>
+            <span className="font-black text-sm" style={{ color: s.store === best.store ? "#003d28" : "#6b7280" }}>
               {s.display}
             </span>
           </div>
@@ -124,27 +196,34 @@ function PriceCard({ item }: { item: ItemData }) {
   );
 }
 
-// ── Main page ───────────────────────────────────────────────────────────────
+// ── Main page ────────────────────────────────────────────────────────────────
 export default function Home() {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<ItemData[] | null>(null);
-  const [basket, setBasket] = useState<string[]>(DEFAULT_BASKET);
+  const [query,      setQuery]      = useState("");
+  const [results,    setResults]    = useState<ItemData[] | null>(null);
+  const [basket,     setBasket]     = useState<string[]>(DEFAULT_BASKET);
   const [postalCode, setPostalCode] = useState("");
-  const [country, setCountry] = useState<"US" | "CA">("US");
+  const [country,    setCountry]    = useState<"US" | "CA">("US");
 
+  // Auto-detect country from IP
   useEffect(() => {
     fetch("https://ipapi.co/json/")
       .then((r) => r.json())
-      .then((data) => {
-        if (data?.country_code === "CA") setCountry("CA");
-        else setCountry("US");
-      })
-      .catch(() => {}); // default US on error
+      .then((data) => { setCountry(data?.country_code === "CA" ? "CA" : "US"); })
+      .catch(() => {});
   }, []);
 
-  const flippLocale = country === "CA" ? "en-ca" : "en-us";
-  const countryLabel = country === "CA" ? "🇨🇦 Canada" : "🇺🇸 United States";
+  // Reset search results when country changes
+  useEffect(() => { setResults(null); setQuery(""); }, [country]);
+
+  const activeItems  = country === "CA" ? ITEMS_CA  : ITEMS_US;
+  const activeStores = country === "CA" ? STORES_CA : STORES_US;
+  const activeTrend  = country === "CA" ? TREND_CA  : TREND_US;
+  const trendStores  = country === "CA" ? TREND_CA_STORES : TREND_US_STORES;
+
+  const flippLocale       = country === "CA" ? "en-ca" : "en-us";
+  const countryLabel      = country === "CA" ? "🇨🇦 Canada" : "🇺🇸 United States";
   const postalPlaceholder = country === "CA" ? "e.g. M5V 3A8 or K1A 0A9" : "e.g. 91743 or 10001";
+  const heroStores        = country === "CA" ? "No Frills, Walmart, and Loblaws" : "Walmart, Target, and Kroger";
 
   const openFlipp = () => {
     const code = postalCode.trim();
@@ -155,34 +234,33 @@ export default function Home() {
   const handleSearch = (q: string) => {
     const term = q.toLowerCase().trim();
     if (!term) { setResults(null); return; }
-    const matches = Object.values(ITEMS).filter(
+    const matches = Object.values(activeItems).filter(
       (item) => item.name.toLowerCase().includes(term) || term.includes(item.name.toLowerCase().split(" ")[0])
     );
     setResults(matches.length ? matches : null);
     setQuery(q);
   };
 
-  const toggleBasket = (key: string) => {
+  const toggleBasket = (key: string) =>
     setBasket((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]);
-  };
 
-  // Compute store totals for basket
-  const basketTotals = STORES.map((store) => {
+  // Basket store totals
+  const basketTotals = activeStores.map((store) => {
     let total = 0;
     basket.forEach((key) => {
-      const item = ITEMS[key];
+      const item  = activeItems[key];
       const price = item?.stores.find((s) => s.store === store)?.price ?? 0;
       total += price;
     });
     return { store, total };
   }).sort((a, b) => a.total - b.total);
 
-  const cheapestStore = basketTotals[0];
+  const cheapestStore  = basketTotals[0];
   const expensiveStore = basketTotals[basketTotals.length - 1];
-  const savings = (expensiveStore.total - cheapestStore.total).toFixed(2);
+  const savings        = (expensiveStore.total - cheapestStore.total).toFixed(2);
 
-  // Milk trend max for bar scaling
-  const maxPrice = Math.max(...PRICE_TREND.flatMap((w) => [w.nofrills, w.walmart, w.loblaws]));
+  const trendValues = activeTrend.flatMap((w) => [w.s1, w.s2, w.s3]);
+  const maxPrice    = Math.max(...trendValues);
 
   return (
     <div className="min-h-screen bg-white">
@@ -204,7 +282,7 @@ export default function Home() {
           </h1>
 
           <p className="text-xl text-gray-500 mb-9 max-w-2xl mx-auto leading-relaxed">
-            Compare prices across No Frills, Walmart, and Loblaws instantly.
+            Compare prices across {heroStores} instantly.
             Find the cheapest basket before you leave home.
           </p>
 
@@ -219,8 +297,7 @@ export default function Home() {
                 placeholder="Search for an item — milk, eggs, bread..."
                 className="flex-1 px-4 py-2.5 text-sm focus:outline-none bg-transparent text-gray-900 placeholder-gray-400"
               />
-              <button
-                onClick={() => handleSearch(query)}
+              <button onClick={() => handleSearch(query)}
                 className="px-5 py-2.5 rounded-xl font-bold text-white text-sm"
                 style={{ background: "#003d28" }}>
                 Compare
@@ -231,9 +308,9 @@ export default function Home() {
           {/* Quick chips */}
           <div className="flex gap-2 justify-center flex-wrap mb-10">
             {QUICK_SEARCHES.map((k) => (
-              <button key={k} onClick={() => { setQuery(ITEMS[k].name); setResults([ITEMS[k]]); }}
+              <button key={k} onClick={() => { setQuery(activeItems[k].name); setResults([activeItems[k]]); }}
                 className="px-3 py-1.5 rounded-full text-xs font-medium border hover:border-gray-400 transition-colors bg-white text-gray-600 border-gray-200">
-                {ITEMS[k].emoji} {ITEMS[k].name}
+                {activeItems[k].emoji} {activeItems[k].name}
               </button>
             ))}
           </div>
@@ -251,12 +328,12 @@ export default function Home() {
             </div>
           )}
 
-          {/* Default preview cards (no search yet) */}
+          {/* Default preview cards */}
           {results === null && (
             <div className="max-w-4xl mx-auto text-left">
               <p className="text-xs text-gray-400 text-center mb-3 uppercase tracking-wider font-medium">Popular comparisons this week</p>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {QUICK_SEARCHES.slice(0, 3).map((k) => <PriceCard key={k} item={ITEMS[k]} />)}
+                {QUICK_SEARCHES.slice(0, 3).map((k) => <PriceCard key={k} item={activeItems[k]} />)}
               </div>
             </div>
           )}
@@ -270,17 +347,15 @@ export default function Home() {
           <h2 className="text-2xl font-black text-gray-900 mt-2 mb-2">Browse this week&apos;s grocery ads</h2>
           <p className="text-gray-500 text-sm mb-4">Enter your ZIP or postal code to see all current flyers near you on Flipp.</p>
 
-          {/* Country selector */}
-          <div className="flex items-center justify-center gap-2 mb-5">
+          {/* Country toggle */}
+          <div className="flex items-center justify-center mb-5">
             <div className="flex rounded-xl border border-gray-200 overflow-hidden text-xs font-bold">
-              <button
-                onClick={() => setCountry("US")}
+              <button onClick={() => setCountry("US")}
                 className={`px-3 py-1.5 transition-colors ${country === "US" ? "text-white" : "text-gray-500 hover:bg-gray-50"}`}
                 style={country === "US" ? { background: "#003d28" } : {}}>
                 🇺🇸 USA
               </button>
-              <button
-                onClick={() => setCountry("CA")}
+              <button onClick={() => setCountry("CA")}
                 className={`px-3 py-1.5 transition-colors border-l border-gray-200 ${country === "CA" ? "text-white" : "text-gray-500 hover:bg-gray-50"}`}
                 style={country === "CA" ? { background: "#003d28" } : {}}>
                 🇨🇦 Canada
@@ -298,12 +373,9 @@ export default function Home() {
               maxLength={10}
               className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent text-gray-900 placeholder-gray-400"
             />
-            <button
-              onClick={openFlipp}
-              disabled={!postalCode.trim()}
+            <button onClick={openFlipp} disabled={!postalCode.trim()}
               className="px-5 py-3 rounded-xl font-bold text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-opacity hover:opacity-90"
-              style={{ background: "#003d28" }}
-            >
+              style={{ background: "#003d28" }}>
               View Flyers →
             </button>
           </div>
@@ -328,7 +400,7 @@ export default function Home() {
               <h3 className="font-bold text-gray-800 mb-4 text-sm">Select items in your basket</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 {ALL_BASKET_KEYS.map((key) => {
-                  const item = ITEMS[key];
+                  const item    = activeItems[key];
                   const checked = basket.includes(key);
                   const cheapest = [...item.stores].sort((a, b) => a.price - b.price)[0];
                   return (
@@ -358,15 +430,15 @@ export default function Home() {
                 <h3 className="font-bold text-gray-800 mb-4 text-sm">Store totals ({basket.length} items)</h3>
                 <div className="space-y-3">
                   {basketTotals.map((st, idx) => (
-                    <div key={st.store} className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${idx === 0 ? "ring-2" : "bg-gray-50"}`}
+                    <div key={st.store}
+                      className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${idx === 0 ? "ring-2" : "bg-gray-50"}`}
                       style={idx === 0 ? { background: "#f0fdf4" } : {}}>
                       <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full" style={{ background: STORE_COLORS[st.store] || "#9ca3af" }} />
                         <span className="text-sm font-medium text-gray-700">{st.store}</span>
                         {idx === 0 && <span className="text-xs font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: "#003d28" }}>Cheapest</span>}
                       </div>
-                      <span className={`font-black text-sm ${idx === 0 ? "" : "text-gray-500"}`}
-                        style={idx === 0 ? { color: "#003d28" } : {}}>
+                      <span className="font-black text-sm" style={{ color: idx === 0 ? "#003d28" : "#6b7280" }}>
                         ${st.total.toFixed(2)}
                       </span>
                     </div>
@@ -399,7 +471,9 @@ export default function Home() {
           <div className="text-center mb-10">
             <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#003d28" }}>Market Activity</span>
             <h2 className="text-3xl font-black text-gray-900 mt-2">This week&apos;s data health</h2>
-            <p className="text-gray-500 text-sm mt-2">Flyer data refreshed weekly from major Canadian grocery chains.</p>
+            <p className="text-gray-500 text-sm mt-2">
+              Flyer data refreshed weekly from major {country === "CA" ? "Canadian" : "US"} grocery chains.
+            </p>
           </div>
 
           {/* Stat cards */}
@@ -416,28 +490,29 @@ export default function Home() {
 
           {/* Milk price trend chart */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h3 className="font-bold text-gray-800 mb-1">Milk (2 L) — 4-week price trend</h3>
+            <h3 className="font-bold text-gray-800 mb-1">
+              Milk ({country === "CA" ? "2 L" : "1 gallon"}) — 4-week price trend
+            </h3>
             <p className="text-xs text-gray-400 mb-5">Weekly low price by store</p>
             <div className="space-y-4">
-              {PRICE_TREND.map((w) => (
+              {activeTrend.map((w) => (
                 <div key={w.week} className="grid grid-cols-[48px_1fr] gap-3 items-center">
                   <span className="text-xs text-gray-400 font-medium">{w.week}</span>
                   <div className="space-y-1.5">
-                    {[
-                      { store: "No Frills", price: w.nofrills },
-                      { store: "Walmart",   price: w.walmart   },
-                      { store: "Loblaws",   price: w.loblaws   },
-                    ].map((s) => (
-                      <div key={s.store} className="flex items-center gap-2">
-                        <div className="w-16 text-xs text-gray-500 flex-shrink-0">{s.store}</div>
-                        <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
-                          <div className="h-4 rounded-full flex items-center pl-2 transition-all"
-                            style={{ width: `${(s.price / maxPrice) * 100}%`, background: STORE_COLORS[s.store] || "#9ca3af" }}>
-                            <span className="text-white text-xs font-bold whitespace-nowrap">${s.price.toFixed(2)}</span>
+                    {([w.s1, w.s2, w.s3] as number[]).map((price, i) => {
+                      const store = trendStores[i];
+                      return (
+                        <div key={store} className="flex items-center gap-2">
+                          <div className="w-16 text-xs text-gray-500 flex-shrink-0">{store}</div>
+                          <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
+                            <div className="h-4 rounded-full flex items-center pl-2 transition-all"
+                              style={{ width: `${(price / maxPrice) * 100}%`, background: STORE_COLORS[store] || "#9ca3af" }}>
+                              <span className="text-white text-xs font-bold whitespace-nowrap">${price.toFixed(2)}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -473,15 +548,15 @@ export default function Home() {
       {/* ── FOOTER ────────────────────────────────────────────────────────── */}
       <footer className="border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-black text-lg" style={{ color: "#003d28" }}>Fair <span style={{ color: "#FFB800" }}>Fare</span></span>
-          </div>
+          <span className="font-black text-lg" style={{ color: "#003d28" }}>
+            Fair <span style={{ color: "#FFB800" }}>Fare</span>
+          </span>
           <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center text-sm text-gray-400">
-            <Link href="/deals" className="hover:text-gray-700">Deals</Link>
+            <Link href="/deals"        className="hover:text-gray-700">Deals</Link>
             <Link href="/smart-basket" className="hover:text-gray-700">Price Compare</Link>
             <Link href="/flyer-analyzer" className="hover:text-gray-700">Flyer AI</Link>
-            <Link href="/upload" className="hover:text-gray-700">Upload</Link>
-            <Link href="/shop" className="hover:text-gray-700">Shop</Link>
+            <Link href="/upload"       className="hover:text-gray-700">Upload</Link>
+            <Link href="/shop"         className="hover:text-gray-700">Shop</Link>
           </div>
           <p className="text-xs text-gray-300">© 2026 Fair Fare. All rights reserved.</p>
         </div>
