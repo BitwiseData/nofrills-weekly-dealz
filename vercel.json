@@ -1,3 +1,11 @@
 {
-  "name": "nofrills-weekly-dealz"
+  "name": "nofrills-weekly-dealz",
+  "functions": {
+    "app/api/analyze-flyers/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/generate-flyer/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }

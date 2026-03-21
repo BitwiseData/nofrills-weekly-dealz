@@ -16,36 +16,44 @@ export interface ExtractedDeal {
   isTopDeal?: boolean;
 }
 
+// Accepts ONE file at a time to stay within Vercel's 4.5 MB body limit
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const files = formData.getAll("pdfs") as File[];
+    const file = formData.get("pdf") as File | null;
 
-    if (!files || files.length === 0) {
-      return NextResponse.json({ error: "No PDF files provided" }, { status: 400 });
+    if (!file) {
+      return NextResponse.json({ error: "No PDF file provided" }, { status: 400 });
     }
 
-    const allDeals: ExtractedDeal[] = [];
+    // Safety check: warn if > 4 MB
+    const MAX_SIZE = 4 * 1024 * 1024; // 4 MB
+    if (file.size > MAX_SIZE) {
+      return NextResponse.json(
+        {
+          error: `PDF "${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB — max is 4 MB. Please split multi-page PDFs into individual pages before uploading.`,
+        },
+        { status: 413 }
+      );
+    }
 
-    for (const file of files) {
-      try {
-        const buffer = await file.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString("base64");
+    const buffer = await file.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
 
-        const { text } = await generateText({
-          model: anthropic("claude-opus-4-5"),
-          messages: [
+    const { text } = await generateText({
+      model: anthropic("claude-opus-4-5"),
+      messages: [
+        {
+          role: "user",
+          content: [
             {
-              role: "user",
-              content: [
-                {
-                  type: "file",
-                  data: base64,
-                  mediaType: "application/pdf",
-                },
-                {
-                  type: "text",
-                  text: `You are a grocery flyer deal extractor. Extract ALL visible deals/products from this flyer image and return ONLY a valid JSON array.
+              type: "file",
+              data: base64,
+              mediaType: "application/pdf",
+            },
+            {
+              type: "text",
+              text: `You are a grocery flyer deal extractor. Extract ALL visible deals/products from this flyer image and return ONLY a valid JSON array.
 
 For each deal, extract:
 - "name": product name (string)
@@ -57,60 +65,34 @@ For each deal, extract:
 - "emoji": single most relevant emoji for the product
 
 Return ONLY the JSON array with no other text, markdown, or explanation.`,
-                },
-              ],
             },
           ],
-        });
+        },
+      ],
+    });
 
-        // Extract JSON array from response
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          const deals = JSON.parse(jsonMatch[0]);
-          const fileName = file.name.replace(/\.pdf$/i, "").replace(/-/g, " ");
-          allDeals.push(
-            ...deals.map((d: Omit<ExtractedDeal, "source">) => ({
-              ...d,
-              source: fileName,
-              savingsPercent: d.savingsPercent || 0,
-            }))
-          );
-        }
-      } catch (fileError) {
-        console.error(`Failed to process ${file.name}:`, fileError);
-      }
+    // Extract JSON array from response
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      return NextResponse.json(
+        { error: "Could not extract deals from this PDF. Please try again." },
+        { status: 422 }
+      );
     }
 
-    // Sort by savings percent descending
-    allDeals.sort((a, b) => (b.savingsPercent || 0) - (a.savingsPercent || 0));
-
-    // Mark top deals (top 5 by savings)
-    allDeals.slice(0, 5).forEach((deal) => {
-      deal.isTopDeal = true;
-    });
-
-    // Group by category for best deals summary
-    const byCategory = allDeals.reduce(
-      (acc, deal) => {
-        if (!acc[deal.category]) acc[deal.category] = [];
-        acc[deal.category].push(deal);
-        return acc;
-      },
-      {} as Record<string, ExtractedDeal[]>
+    const deals: ExtractedDeal[] = JSON.parse(jsonMatch[0]).map(
+      (d: Omit<ExtractedDeal, "source">) => ({
+        ...d,
+        savingsPercent: d.savingsPercent || 0,
+        source: file.name.replace(/\.pdf$/i, "").replace(/[-_]/g, " "),
+      })
     );
 
-    return NextResponse.json({
-      deals: allDeals,
-      totalDeals: allDeals.length,
-      filesProcessed: files.length,
-      byCategory,
-      topDeals: allDeals.slice(0, 5),
-    });
+    return NextResponse.json({ deals, fileName: file.name });
   } catch (error) {
-    console.error("Error analyzing flyers:", error);
-    return NextResponse.json(
-      { error: "Failed to analyze flyers. Please try again." },
-      { status: 500 }
-    );
+    console.error("Error analyzing flyer:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to analyze flyer";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
