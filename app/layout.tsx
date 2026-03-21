@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/app/context/AuthContext";
 
 export const metadata: Metadata = {
-  title: "No Frills Dealz – Week 10 Flyer",
-  description: "Browse this week's No Frills grocery deals and get AI-powered savings recommendations.",
+  title: "FlyerCoins — Upload Flyers, Earn Coins, Save on Groceries",
+  description: "Upload grocery store flyer PDFs, earn FlyerCoins, compare prices at nearby stores, and redeem coins for real grocery savings.",
 };
 
 export default function RootLayout({
@@ -13,7 +14,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }
