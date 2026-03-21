@@ -15,7 +15,7 @@ export default function NavBar() {
     { href: "/flyer-analyzer",label: "Flyer AI",     icon: "📄" },
     { href: "/smart-basket",  label: "Price Compare",icon: "🛒" },
     { href: "/shop",          label: "Shop",         icon: "🛍️" },
-    { href: "/upload",        label: "Earn Coins",   icon: "⬆️" },
+    { href: "/upload",        label: "Upload",       icon: "⬆️" },
   ];
 
   return (
