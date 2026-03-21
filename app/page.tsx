@@ -129,6 +129,13 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ItemData[] | null>(null);
   const [basket, setBasket] = useState<string[]>(DEFAULT_BASKET);
+  const [postalCode, setPostalCode] = useState("");
+
+  const openFlipp = () => {
+    const code = postalCode.trim();
+    if (!code) return;
+    window.open(`https://flipp.com/en-us/weekly_ads/groceries?postal_code=${encodeURIComponent(code)}`, "_blank", "noopener,noreferrer");
+  };
 
   const handleSearch = (q: string) => {
     const term = q.toLowerCase().trim();
@@ -238,6 +245,35 @@ export default function Home() {
               </div>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* ── BROWSE WEEKLY FLYERS ──────────────────────────────────────────── */}
+      <section className="py-14 border-y border-gray-100 bg-white">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#003d28" }}>Weekly Flyers</span>
+          <h2 className="text-2xl font-black text-gray-900 mt-2 mb-2">Browse this week&apos;s grocery ads</h2>
+          <p className="text-gray-500 text-sm mb-6">Enter your ZIP or postal code to see all current flyers near you on Flipp.</p>
+          <div className="flex gap-2 max-w-sm mx-auto">
+            <input
+              type="text"
+              value={postalCode}
+              onChange={(e) => setPostalCode(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && openFlipp()}
+              placeholder="e.g. 91743 or M5V 3A8"
+              maxLength={10}
+              className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent text-gray-900 placeholder-gray-400"
+            />
+            <button
+              onClick={openFlipp}
+              disabled={!postalCode.trim()}
+              className="px-5 py-3 rounded-xl font-bold text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-opacity hover:opacity-90"
+              style={{ background: "#003d28" }}
+            >
+              View Flyers →
+            </button>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">Opens weekly ads on Flipp.com in a new tab</p>
         </div>
       </section>
 
