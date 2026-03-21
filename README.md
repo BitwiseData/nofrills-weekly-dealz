@@ -1,3 +1,5 @@
+An AI-powered grocery price engine that automates deal-finding from fragmented retail flyers. Users can batch-upload multiple PDF circulars (e.g., No Frills, Walmart, Loblaws), and the platform uses the Vercel AI SDK and LLM-based extraction to normalize product data, compare unit prices, and generate an optimized shopping list.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
