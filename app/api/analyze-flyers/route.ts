@@ -1,6 +1,7 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
 import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 
 export const maxDuration = 120;
 
@@ -8,12 +9,15 @@ export interface ExtractedDeal {
   name: string;
   category: string;
   price: string;
+  originalPrice?: string;
   size?: string;
   savingsPercent: number;
   badge?: string;
   emoji: string;
   source: string;
   isTopDeal?: boolean;
+  validFrom?: string;
+  validTo?: string;
 }
 
 // Accepts ONE file at a time to stay within Vercel's 4.5 MB body limit
@@ -21,13 +25,15 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get("pdf") as File | null;
+    const storeName = (formData.get("storeName") as string) || "";
+    const country = (formData.get("country") as string) || "US";
 
     if (!file) {
       return NextResponse.json({ error: "No PDF file provided" }, { status: 400 });
     }
 
     // Safety check: warn if > 4 MB
-    const MAX_SIZE = 4 * 1024 * 1024; // 4 MB
+    const MAX_SIZE = 4 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
         {
@@ -40,6 +46,24 @@ export async function POST(request: NextRequest) {
     const buffer = await file.arrayBuffer();
     const base64 = Buffer.from(buffer).toString("base64");
 
+    // ── Save upload record to Supabase ────────────────────────────────────────
+    let uploadId: string | null = null;
+    if (isSupabaseConfigured()) {
+      const { data: uploadRecord } = await supabaseAdmin
+        .from("flyer_uploads")
+        .insert({
+          file_name: file.name,
+          file_size_bytes: file.size,
+          store_name: storeName || file.name.replace(/\.pdf$/i, "").replace(/[-_]/g, " "),
+          country: country.toUpperCase(),
+          status: "processing",
+        })
+        .select()
+        .single();
+      uploadId = uploadRecord?.id || null;
+    }
+
+    // ── AI extraction ─────────────────────────────────────────────────────────
     const { text } = await generateText({
       model: anthropic("claude-opus-4-5"),
       messages: [
@@ -59,10 +83,13 @@ For each deal, extract:
 - "name": product name (string)
 - "category": one of Produce, Meat, Seafood, Pantry, Dairy, Frozen, Bakery, Beverage, Snacks, Household, Floral, Other
 - "price": price as shown (e.g. "$1.99", "$1.29/lb", "$5.50")
+- "originalPrice": original price before discount if visible (e.g. "$2.99"), null if not shown
 - "size": package size if visible (e.g. "1 lb", "750g", null if not shown)
-- "savingsPercent": numeric savings percent (e.g. 35 for "SAVE 35%", 59 for "SAVE 59%", 0 if not mentioned)
+- "savingsPercent": numeric savings percent (e.g. 35 for "SAVE 35%", 0 if not mentioned)
 - "badge": promo badge text (e.g. "SAVE 50%", "PRICE DROP", "App Exclusive", null if none)
 - "emoji": single most relevant emoji for the product
+- "validFrom": flyer valid-from date if visible (ISO format YYYY-MM-DD), null if not shown
+- "validTo": flyer valid-to date if visible (ISO format YYYY-MM-DD), null if not shown
 
 Return ONLY the JSON array with no other text, markdown, or explanation.`,
             },
@@ -74,21 +101,73 @@ Return ONLY the JSON array with no other text, markdown, or explanation.`,
     // Extract JSON array from response
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
+      // Update upload record as failed
+      if (isSupabaseConfigured() && uploadId) {
+        await supabaseAdmin
+          .from("flyer_uploads")
+          .update({ status: "failed", deals_found: 0 })
+          .eq("id", uploadId);
+      }
       return NextResponse.json(
         { error: "Could not extract deals from this PDF. Please try again." },
         { status: 422 }
       );
     }
 
-    const deals: ExtractedDeal[] = JSON.parse(jsonMatch[0]).map(
-      (d: Omit<ExtractedDeal, "source">) => ({
-        ...d,
-        savingsPercent: d.savingsPercent || 0,
-        source: file.name.replace(/\.pdf$/i, "").replace(/[-_]/g, " "),
-      })
-    );
+    const sourceName = storeName || file.name.replace(/\.pdf$/i, "").replace(/[-_]/g, " ");
 
-    return NextResponse.json({ deals, fileName: file.name });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const deals: ExtractedDeal[] = JSON.parse(jsonMatch[0]).map((d: any) => ({
+      ...d,
+      savingsPercent: d.savingsPercent || 0,
+      source: sourceName,
+    }));
+
+    // ── Save deals to Supabase flyer_deals table ──────────────────────────────
+    if (isSupabaseConfigured() && deals.length > 0) {
+      // Parse numeric price from string like "$1.99" or "$1.29/lb"
+      const parsePrice = (priceStr: string): number | null => {
+        const match = priceStr?.match(/[\d.]+/);
+        return match ? parseFloat(match[0]) : null;
+      };
+
+      const dealRows = deals.map((d) => ({
+        store_chain: sourceName,
+        country: country.toUpperCase(),
+        product_name: d.name,
+        category: d.category,
+        price: parsePrice(d.price),
+        original_price: d.originalPrice ? parsePrice(d.originalPrice) : null,
+        savings_pct: d.savingsPercent || 0,
+        badge: d.badge || null,
+        emoji: d.emoji,
+        valid_from: d.validFrom || null,
+        valid_to: d.validTo || null,
+        source: "pdf_upload",
+        upload_id: uploadId,
+      }));
+
+      await supabaseAdmin.from("flyer_deals").insert(dealRows);
+
+      // Update upload record as completed
+      if (uploadId) {
+        await supabaseAdmin
+          .from("flyer_uploads")
+          .update({
+            status: "completed",
+            deals_found: deals.length,
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", uploadId);
+      }
+    }
+
+    return NextResponse.json({
+      deals,
+      fileName: file.name,
+      savedToDb: isSupabaseConfigured() && deals.length > 0,
+      uploadId,
+    });
   } catch (error) {
     console.error("Error analyzing flyer:", error);
     const message =
