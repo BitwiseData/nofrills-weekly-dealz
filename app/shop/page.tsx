@@ -53,7 +53,7 @@ export default function ShopPage() {
               <span className="text-xl">🪙</span>
               <div>
                 <div className="text-2xl font-black leading-none" style={{ color: "#003d28" }}>{user.coins.toLocaleString()}</div>
-                <div className="text-xs text-gray-400">Fair Fare</div>
+                <div className="text-xs text-gray-400">coins</div>
               </div>
             </div>
           ) : (
@@ -68,7 +68,7 @@ export default function ShopPage() {
           <div className="rounded-2xl p-6 mb-8 flex items-center gap-4" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
             <span className="text-4xl">🪙</span>
             <div>
-              <p className="font-bold text-gray-900">Sign up to earn Fair Fare</p>
+              <p className="font-bold text-gray-900">Sign up to earn coins</p>
               <p className="text-sm text-gray-500">Upload flyers and earn 100 coins per page. Redeem them here for grocery savings!</p>
             </div>
             <Link href="/signup" className="ml-auto flex-shrink-0 px-5 py-2 rounded-xl font-bold text-white text-sm" style={{ background: "#003d28" }}>
