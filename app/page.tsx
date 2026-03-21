@@ -5,8 +5,8 @@ import Link from "next/link";
 import NavBar from "@/app/components/NavBar";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
-interface StorePrice { store: string; price: number; display: string; }
-interface ItemData { name: string; unit: string; stores: StorePrice[]; emoji: string; }
+interface StorePrice { store: string; price: number; display: string; isOnSale?: boolean; }
+interface ItemData { name: string; unit: string; stores: StorePrice[]; emoji: string; source?: "live" | "cached" | "estimated"; updatedAt?: string; }
 interface TrendRow { week: string; s1: number; s2: number; s3: number; }
 
 // ── Canada Price Database (No Frills · Walmart · Loblaws) ─────────────────────
@@ -156,6 +156,21 @@ const STORE_COLORS: Record<string, string> = {
   "Kroger":    "#004990",
 };
 
+// ── Source badge helper ───────────────────────────────────────────────────────
+function SourceBadge({ source }: { source?: "live" | "cached" | "estimated" }) {
+  if (!source) return null;
+  const cfg = {
+    live:      { label: "🟢 Live",      bg: "#f0fdf4", color: "#166534" },
+    cached:    { label: "🟡 Cached",    bg: "#fefce8", color: "#854d0e" },
+    estimated: { label: "⚪ Estimated", bg: "#f9fafb", color: "#6b7280" },
+  }[source];
+  return (
+    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: cfg.bg, color: cfg.color }}>
+      {cfg.label}
+    </span>
+  );
+}
+
 // ── PriceCard component ──────────────────────────────────────────────────────
 function PriceCard({ item }: { item: ItemData }) {
   const sorted = [...item.stores].sort((a, b) => a.price - b.price);
@@ -166,18 +181,21 @@ function PriceCard({ item }: { item: ItemData }) {
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-5 pt-5 pb-3 flex items-center gap-3">
         <span className="text-3xl">{item.emoji}</span>
-        <div>
-          <div className="font-bold text-gray-900">{item.name}</div>
+        <div className="min-w-0">
+          <div className="font-bold text-gray-900 truncate">{item.name}</div>
           <div className="text-xs text-gray-400">{item.unit}</div>
         </div>
-        <div className="ml-auto text-xs font-semibold px-2 py-1 rounded-full" style={{ background: "#f0fdf4", color: "#059669" }}>
-          Save ${saved}
+        <div className="ml-auto flex flex-col items-end gap-1 flex-shrink-0">
+          <div className="text-xs font-semibold px-2 py-1 rounded-full" style={{ background: "#f0fdf4", color: "#059669" }}>
+            Save ${saved}
+          </div>
+          <SourceBadge source={item.source} />
         </div>
       </div>
       <div className="px-5 pb-5 space-y-2">
         {sorted.map((s) => (
           <div key={s.store}
-            className={`flex items-center justify-between rounded-xl px-3 py-2 ${s.store === best.store ? "ring-2" : "bg-gray-50"}`}
+            className={`flex items-center justify-between rounded-xl px-3 py-2 ${s.store === best.store ? "ring-2 ring-green-200" : "bg-gray-50"}`}
             style={s.store === best.store ? { background: "#f0fdf4" } : {}}>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STORE_COLORS[s.store] || "#9ca3af" }} />
@@ -185,12 +203,18 @@ function PriceCard({ item }: { item: ItemData }) {
               {s.store === best.store && (
                 <span className="text-xs font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: "#003d28" }}>Best</span>
               )}
+              {s.isOnSale && (
+                <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#fef2f2", color: "#dc2626" }}>Sale</span>
+              )}
             </div>
             <span className="font-black text-sm" style={{ color: s.store === best.store ? "#003d28" : "#6b7280" }}>
               {s.display}
             </span>
           </div>
         ))}
+        {item.updatedAt && (
+          <p className="text-xs text-gray-300 pt-1">Updated {new Date(item.updatedAt).toLocaleDateString()}</p>
+        )}
       </div>
     </div>
   );
@@ -200,6 +224,7 @@ function PriceCard({ item }: { item: ItemData }) {
 export default function Home() {
   const [query,      setQuery]      = useState("");
   const [results,    setResults]    = useState<ItemData[] | null>(null);
+  const [searching,  setSearching]  = useState(false);
   const [basket,     setBasket]     = useState<string[]>(DEFAULT_BASKET);
   const [postalCode, setPostalCode] = useState("");
   const [country,    setCountry]    = useState<"US" | "CA">("US");
@@ -231,14 +256,40 @@ export default function Home() {
     window.open(`https://flipp.com/${flippLocale}/weekly_ads/groceries?postal_code=${encodeURIComponent(code)}`, "_blank", "noopener,noreferrer");
   };
 
-  const handleSearch = (q: string) => {
+  const handleSearch = async (q: string) => {
     const term = q.toLowerCase().trim();
     if (!term) { setResults(null); return; }
+    setQuery(q);
+    setSearching(true);
+
+    try {
+      const params = new URLSearchParams({ items: term, country });
+      if (postalCode.trim()) params.set("postalCode", postalCode.trim());
+      const res = await fetch(`/api/prices?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.results?.length) {
+          const mapped: ItemData[] = data.results.map((r: {
+            name: string; unit: string; emoji: string;
+            stores: { store: string; price: number; display: string; isOnSale?: boolean }[];
+            source: "live" | "cached" | "estimated"; updatedAt: string;
+          }) => ({
+            name: r.name, unit: r.unit, emoji: r.emoji,
+            stores: r.stores, source: r.source, updatedAt: r.updatedAt,
+          }));
+          setResults(mapped);
+          setSearching(false);
+          return;
+        }
+      }
+    } catch { /* fall through to local */ }
+
+    // Local fallback
     const matches = Object.values(activeItems).filter(
       (item) => item.name.toLowerCase().includes(term) || term.includes(item.name.toLowerCase().split(" ")[0])
     );
-    setResults(matches.length ? matches : null);
-    setQuery(q);
+    setResults(matches.length ? matches.map(m => ({ ...m, source: "estimated" as const })) : []);
+    setSearching(false);
   };
 
   const toggleBasket = (key: string) =>
@@ -297,10 +348,10 @@ export default function Home() {
                 placeholder="Search for an item — milk, eggs, bread..."
                 className="flex-1 px-4 py-2.5 text-sm focus:outline-none bg-transparent text-gray-900 placeholder-gray-400"
               />
-              <button onClick={() => handleSearch(query)}
-                className="px-5 py-2.5 rounded-xl font-bold text-white text-sm"
+              <button onClick={() => handleSearch(query)} disabled={searching}
+                className="px-5 py-2.5 rounded-xl font-bold text-white text-sm disabled:opacity-60 transition-opacity"
                 style={{ background: "#003d28" }}>
-                Compare
+                {searching ? "..." : "Compare"}
               </button>
             </div>
           </div>
