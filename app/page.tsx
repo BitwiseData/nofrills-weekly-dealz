@@ -131,7 +131,6 @@ export default function Home() {
   const [basket, setBasket] = useState<string[]>(DEFAULT_BASKET);
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState<"US" | "CA">("US");
-  const [countryDetected, setCountryDetected] = useState(false);
 
   useEffect(() => {
     fetch("https://ipapi.co/json/")
@@ -139,9 +138,8 @@ export default function Home() {
       .then((data) => {
         if (data?.country_code === "CA") setCountry("CA");
         else setCountry("US");
-        setCountryDetected(true);
       })
-      .catch(() => setCountryDetected(true)); // default US on error
+      .catch(() => {}); // default US on error
   }, []);
 
   const flippLocale = country === "CA" ? "en-ca" : "en-us";
@@ -274,9 +272,6 @@ export default function Home() {
 
           {/* Country selector */}
           <div className="flex items-center justify-center gap-2 mb-5">
-            <span className="text-xs text-gray-400">
-              {countryDetected ? "Detected location:" : "Detecting location…"}
-            </span>
             <div className="flex rounded-xl border border-gray-200 overflow-hidden text-xs font-bold">
               <button
                 onClick={() => setCountry("US")}
