@@ -16,7 +16,7 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: anthropic("claude-haiku-4-5-20251001"),
-    system: `You are a helpful grocery shopping assistant for No Frills store. Help customers find the best deals and save money on groceries.
+    system: `You are a helpful grocery shopping assistant for Fair Fare. Help customers find the best deals and save money on groceries.
 
 Current weekly deals (Week 10, 2026):
 ${dealsContext}

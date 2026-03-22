@@ -149,7 +149,7 @@ export default function UploadPage() {
             <input type="text" value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2"
-              placeholder="e.g. No Frills, Walmart, Food Basics..." />
+              placeholder="e.g. Food Basics, Walmart, Loblaws..." />
           </div>
 
           {/* Tip */}

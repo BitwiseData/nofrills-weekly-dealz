@@ -21,7 +21,7 @@ export default function DealsPage() {
       {/* Hero bar */}
       <div style={{ background: "#003d28" }} className="py-8 text-center">
         <h1 className="text-white text-3xl font-black mb-1">This Week&apos;s Deals 🏷️</h1>
-        <p style={{ color: "#91d520" }} className="text-sm">No Frills · Week 10, 2026</p>
+        <p style={{ color: "#91d520" }} className="text-sm">Weekly Grocery Deals · Week 10, 2026</p>
       </div>
 
       <div style={{ background: "#fea319" }} className="py-2.5 text-center">

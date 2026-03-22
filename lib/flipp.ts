@@ -1,6 +1,6 @@
 /**
  * Flipp API client (unofficial but widely used)
- * Powers flyer deals for Walmart, Costco, Kroger, No Frills, Loblaws, etc.
+ * Powers flyer deals for Walmart, Costco, Kroger, Food Basics, Loblaws, etc.
  */
 
 const FLIPP_BASE = "https://backflipp.wishabi.com/flipp";

@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     // Use store names found nearby, or fall back to common Canadian chains
     const storeNames = nearbyStores.length >= 2
       ? nearbyStores.slice(0, 5).map((s) => s.name)
-      : ["No Frills", "Walmart", "Loblaws", "Food Basics", "Metro"];
+      : ["Food Basics", "Walmart", "Loblaws", "Food Basics", "Metro"];
 
     const storeList = storeNames.join(", ");
     const itemList = items.join(", ");
@@ -130,7 +130,7 @@ Return ONLY a valid JSON object with this exact structure:
   "tips": ["2-3 short money-saving tips for these specific items"]
 }
 
-Be realistic — No Frills and Food Basics are cheaper than Loblaws and Metro. Walmart prices are mid-range. Include all ${storeNames.length} stores.`,
+Be realistic — Food Basics and Food Basics are cheaper than Loblaws and Metro. Walmart prices are mid-range. Include all ${storeNames.length} stores.`,
         },
       ],
     });

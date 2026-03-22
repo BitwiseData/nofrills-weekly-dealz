@@ -9,55 +9,55 @@ interface StorePrice { store: string; price: number; display: string; isOnSale?:
 interface ItemData { name: string; unit: string; stores: StorePrice[]; emoji: string; source?: "live" | "cached" | "estimated"; updatedAt?: string; }
 interface TrendRow { week: string; s1: number; s2: number; s3: number; }
 
-// ── Canada Price Database (No Frills · Walmart · Loblaws) ─────────────────────
+// ── Canada Price Database (Food Basics · Walmart · Loblaws) ───────────────────
 const ITEMS_CA: Record<string, ItemData> = {
   milk:    { name: "Milk",           unit: "2 L",        emoji: "🥛", stores: [
-    { store: "No Frills", price: 3.99,  display: "$3.99"  },
+    { store: "Food Basics", price: 3.99,  display: "$3.99"  },
     { store: "Walmart",   price: 4.49,  display: "$4.49"  },
     { store: "Loblaws",   price: 5.29,  display: "$5.29"  },
   ]},
   eggs:    { name: "Eggs",           unit: "12 pack",    emoji: "🥚", stores: [
-    { store: "No Frills", price: 3.49,  display: "$3.49"  },
+    { store: "Food Basics", price: 3.49,  display: "$3.49"  },
     { store: "Walmart",   price: 3.97,  display: "$3.97"  },
     { store: "Loblaws",   price: 4.79,  display: "$4.79"  },
   ]},
   bread:   { name: "Bread",          unit: "675 g loaf", emoji: "🍞", stores: [
     { store: "Walmart",   price: 2.97,  display: "$2.97"  },
-    { store: "No Frills", price: 3.19,  display: "$3.19"  },
+    { store: "Food Basics", price: 3.19,  display: "$3.19"  },
     { store: "Loblaws",   price: 3.99,  display: "$3.99"  },
   ]},
   bananas: { name: "Bananas",        unit: "per kg",     emoji: "🍌", stores: [
-    { store: "No Frills", price: 1.49,  display: "$1.49"  },
+    { store: "Food Basics", price: 1.49,  display: "$1.49"  },
     { store: "Walmart",   price: 1.67,  display: "$1.67"  },
     { store: "Loblaws",   price: 1.99,  display: "$1.99"  },
   ]},
   chicken: { name: "Chicken Breast", unit: "per kg",     emoji: "🍗", stores: [
     { store: "Walmart",   price: 9.97,  display: "$9.97"  },
-    { store: "No Frills", price: 10.99, display: "$10.99" },
+    { store: "Food Basics", price: 10.99, display: "$10.99" },
     { store: "Loblaws",   price: 13.49, display: "$13.49" },
   ]},
   butter:  { name: "Butter",         unit: "454 g",      emoji: "🧈", stores: [
-    { store: "No Frills", price: 5.49,  display: "$5.49"  },
+    { store: "Food Basics", price: 5.49,  display: "$5.49"  },
     { store: "Walmart",   price: 5.97,  display: "$5.97"  },
     { store: "Loblaws",   price: 6.99,  display: "$6.99"  },
   ]},
   pasta:   { name: "Pasta",          unit: "900 g",      emoji: "🍝", stores: [
     { store: "Walmart",   price: 2.47,  display: "$2.47"  },
-    { store: "No Frills", price: 2.79,  display: "$2.79"  },
+    { store: "Food Basics", price: 2.79,  display: "$2.79"  },
     { store: "Loblaws",   price: 3.49,  display: "$3.49"  },
   ]},
   apples:  { name: "Apples",         unit: "3 lb bag",   emoji: "🍎", stores: [
-    { store: "No Frills", price: 4.99,  display: "$4.99"  },
+    { store: "Food Basics", price: 4.99,  display: "$4.99"  },
     { store: "Walmart",   price: 5.47,  display: "$5.47"  },
     { store: "Loblaws",   price: 6.29,  display: "$6.29"  },
   ]},
   cheese:  { name: "Cheddar Cheese", unit: "400 g",      emoji: "🧀", stores: [
     { store: "Walmart",   price: 5.97,  display: "$5.97"  },
-    { store: "No Frills", price: 6.49,  display: "$6.49"  },
+    { store: "Food Basics", price: 6.49,  display: "$6.49"  },
     { store: "Loblaws",   price: 7.99,  display: "$7.99"  },
   ]},
   rice:    { name: "White Rice",     unit: "2 kg",       emoji: "🍚", stores: [
-    { store: "No Frills", price: 4.49,  display: "$4.49"  },
+    { store: "Food Basics", price: 4.49,  display: "$4.49"  },
     { store: "Walmart",   price: 4.97,  display: "$4.97"  },
     { store: "Loblaws",   price: 5.99,  display: "$5.99"  },
   ]},
@@ -117,7 +117,7 @@ const ITEMS_US: Record<string, ItemData> = {
   ]},
 };
 
-const STORES_CA = ["No Frills", "Walmart", "Loblaws"];
+const STORES_CA = ["Food Basics", "Walmart", "Loblaws"];
 const STORES_US = ["Walmart", "Target", "Kroger"];
 
 // 4-week milk price trend
@@ -127,7 +127,7 @@ const TREND_CA: TrendRow[] = [
   { week: "Wk 12", s1: 3.99, s2: 4.49, s3: 5.29 },
   { week: "Wk 13", s1: 3.99, s2: 4.59, s3: 5.49 },
 ];
-const TREND_CA_STORES = ["No Frills", "Walmart", "Loblaws"];
+const TREND_CA_STORES = ["Food Basics", "Walmart", "Loblaws"];
 
 const TREND_US: TrendRow[] = [
   { week: "Wk 10", s1: 3.39, s2: 3.68, s3: 4.09 },
@@ -149,7 +149,7 @@ const DATA_HEALTH = [
 ];
 
 const STORE_COLORS: Record<string, string> = {
-  "No Frills": "#FFB800",
+  "Food Basics": "#FFB800",
   "Walmart":   "#0071CE",
   "Loblaws":   "#d62b1f",
   "Target":    "#CC0000",
@@ -248,7 +248,7 @@ export default function Home() {
   const flippLocale       = country === "CA" ? "en-ca" : "en-us";
   const countryLabel      = country === "CA" ? "🇨🇦 Canada" : "🇺🇸 United States";
   const postalPlaceholder = country === "CA" ? "e.g. M5V 3A8 or K1A 0A9" : "e.g. 91743 or 10001";
-  const heroStores        = country === "CA" ? "No Frills, Walmart, and Loblaws" : "Walmart, Target, and Kroger";
+  const heroStores        = country === "CA" ? "Food Basics, Walmart, and Loblaws" : "Walmart, Target, and Kroger";
 
   const openFlipp = () => {
     const code = postalCode.trim();

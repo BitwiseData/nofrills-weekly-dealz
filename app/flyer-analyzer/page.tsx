@@ -257,7 +257,7 @@ export default function FlyerAnalyzer() {
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-full max-w-sm focus:outline-none focus:ring-2 focus:ring-green-700"
-              placeholder="e.g. No Frills Week 10 Deals"
+              placeholder="e.g. Food Basics Week 10 Deals"
             />
           </div>
 
