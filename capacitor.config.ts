@@ -1,17 +1,17 @@
-import type { CapacitorConfig } from "@capacitor/cli";
+// Capacitor config — used ONLY when building the native iOS/Android app.
+// Not imported by Next.js. Run: npx cap add ios/android
+// See MOBILE_SETUP.md for full instructions.
 
-const config: CapacitorConfig = {
+const config = {
   appId: "com.fairfare.app",
   appName: "Fair Fare",
   // Points the native shell to the live Vercel deployment.
-  // The app works online; no static export needed.
+  // No static export needed — the app loads the website inside a native container.
   server: {
     url: "https://fair-fare.vercel.app",
     cleartext: false,
     androidScheme: "https",
   },
-  // For local dev/testing, swap the server URL above with:
-  //   url: "http://YOUR_LOCAL_IP:3000"
   ios: {
     contentInset: "automatic",
   },
