@@ -76,9 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     coins: number | null;
   }
 
-  async function fetchProfile(userId: string, supabase: ReturnType<typeof createClient>): Promise<ProfileRow | null> {
+  async function fetchProfile(userId: string): Promise<ProfileRow | null> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const sb = getSupabaseClient() as any;
+    if (!sb) return null;
+    const { data } = await sb
       .from("profiles")
       .select("display_name, is_admin, coins")
       .eq("id", userId)
@@ -86,8 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return (data as ProfileRow | null);
   }
 
-  async function buildUser(supabaseUser: { id: string; email?: string; created_at?: string; user_metadata?: Record<string, string> }, supabase: ReturnType<typeof createClient>): Promise<User> {
-    const profile = await fetchProfile(supabaseUser.id, supabase);
+  async function buildUser(supabaseUser: { id: string; email?: string; created_at?: string; user_metadata?: Record<string, string> }): Promise<User> {
+    const profile = await fetchProfile(supabaseUser.id);
     return {
       id: supabaseUser.id,
       name: profile?.display_name || supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "User",
@@ -119,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        const u = await buildUser(session.user, supabase);
+        const u = await buildUser(session.user);
         setUser(u);
       }
       setIsLoading(false);
@@ -128,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth state changes (login / logout / token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const u = await buildUser(session.user, supabase);
+        const u = await buildUser(session.user);
         setUser(u);
       } else {
         setUser(null);
