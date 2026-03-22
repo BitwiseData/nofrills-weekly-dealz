@@ -70,13 +70,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Supabase helpers ─────────────────────────────────────────────────────
 
-  async function fetchProfile(userId: string, supabase: ReturnType<typeof createClient>) {
-    const { data } = await supabase
+  interface ProfileRow {
+    display_name: string | null;
+    is_admin: boolean | null;
+    coins: number | null;
+  }
+
+  async function fetchProfile(userId: string, supabase: ReturnType<typeof createClient>): Promise<ProfileRow | null> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
       .from("profiles")
-      .select("display_name, is_admin, coins, created_at")
+      .select("display_name, is_admin, coins")
       .eq("id", userId)
       .single();
-    return data;
+    return (data as ProfileRow | null);
   }
 
   async function buildUser(supabaseUser: { id: string; email?: string; created_at?: string; user_metadata?: Record<string, string> }, supabase: ReturnType<typeof createClient>): Promise<User> {
