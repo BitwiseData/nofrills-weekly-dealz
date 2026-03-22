@@ -5,6 +5,8 @@ import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 
 export const maxDuration = 120;
 
+// ─── Types ─────────────────────────────────────────────────────────────────
+
 export interface ExtractedDeal {
   name: string;
   category: string;
@@ -19,6 +21,82 @@ export interface ExtractedDeal {
   validFrom?: string;
   validTo?: string;
 }
+
+// ─── OCR: extract embedded text from PDF (free, no API) ───────────────────
+
+async function extractTextFromPdf(buffer: ArrayBuffer): Promise<string | null> {
+  try {
+    // Dynamically import pdf-parse to avoid build-time issues
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const pdfParse = require("pdf-parse");
+    const { text } = await pdfParse(Buffer.from(buffer));
+    // Only useful if there's meaningful text (> 100 chars after trimming whitespace)
+    const cleaned = text.replace(/\s+/g, " ").trim();
+    return cleaned.length > 100 ? cleaned : null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Shared extraction prompt ─────────────────────────────────────────────
+
+const DEAL_EXTRACTION_PROMPT = `You are a grocery flyer deal extractor. Extract ALL deals/products and return ONLY a valid JSON array.
+
+For each deal extract:
+- "name": product name (string)
+- "category": one of Produce, Meat, Seafood, Pantry, Dairy, Frozen, Bakery, Beverage, Snacks, Household, Floral, Other
+- "price": price as shown (e.g. "$1.99", "$1.29/lb")
+- "originalPrice": original price if visible (e.g. "$2.99"), null if not shown
+- "size": package size if visible (e.g. "1 lb", "750g"), null if not shown
+- "savingsPercent": numeric savings percent (e.g. 35 for "SAVE 35%", 0 if not mentioned)
+- "badge": promo badge text (e.g. "SAVE 50%", "PRICE DROP", "App Exclusive"), null if none
+- "emoji": single most relevant emoji for the product
+- "validFrom": flyer valid-from date if visible (ISO YYYY-MM-DD), null if not shown
+- "validTo": flyer valid-to date if visible (ISO YYYY-MM-DD), null if not shown
+
+Return ONLY the JSON array with no other text, markdown, or explanation.`;
+
+// ─── Method 1: Text-based extraction (free — uses pdf-parse) ──────────────
+
+async function extractDealsFromText(pdfText: string): Promise<string> {
+  const { text } = await generateText({
+    model: anthropic("claude-haiku-4-5"),   // Cheapest model — text is already extracted
+    messages: [
+      {
+        role: "user",
+        content: `${DEAL_EXTRACTION_PROMPT}\n\nHere is the extracted text from a grocery flyer:\n\n${pdfText.slice(0, 12000)}`,
+      },
+    ],
+  });
+  return text;
+}
+
+// ─── Method 2: Vision-based extraction (Claude document API) ─────────────
+
+async function extractDealsFromDocument(base64: string): Promise<string> {
+  const { text } = await generateText({
+    model: anthropic("claude-opus-4-5"),    // Full vision model — needed for image PDFs
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "file",
+            data: base64,
+            mediaType: "application/pdf",
+          },
+          {
+            type: "text",
+            text: DEAL_EXTRACTION_PROMPT,
+          },
+        ],
+      },
+    ],
+  });
+  return text;
+}
+
+// ─── Main handler ──────────────────────────────────────────────────────────
 
 // Accepts ONE file at a time to stay within Vercel's 4.5 MB body limit
 export async function POST(request: NextRequest) {
@@ -63,45 +141,30 @@ export async function POST(request: NextRequest) {
       uploadId = uploadRecord?.id || null;
     }
 
-    // ── AI extraction ─────────────────────────────────────────────────────────
-    const { text } = await generateText({
-      model: anthropic("claude-opus-4-5"),
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "file",
-              data: base64,
-              mediaType: "application/pdf",
-            },
-            {
-              type: "text",
-              text: `You are a grocery flyer deal extractor. Extract ALL visible deals/products from this flyer image and return ONLY a valid JSON array.
+    // ── Smart OCR: try free text extraction first, fall back to vision ─────────
 
-For each deal, extract:
-- "name": product name (string)
-- "category": one of Produce, Meat, Seafood, Pantry, Dairy, Frozen, Bakery, Beverage, Snacks, Household, Floral, Other
-- "price": price as shown (e.g. "$1.99", "$1.29/lb", "$5.50")
-- "originalPrice": original price before discount if visible (e.g. "$2.99"), null if not shown
-- "size": package size if visible (e.g. "1 lb", "750g", null if not shown)
-- "savingsPercent": numeric savings percent (e.g. 35 for "SAVE 35%", 0 if not mentioned)
-- "badge": promo badge text (e.g. "SAVE 50%", "PRICE DROP", "App Exclusive", null if none)
-- "emoji": single most relevant emoji for the product
-- "validFrom": flyer valid-from date if visible (ISO format YYYY-MM-DD), null if not shown
-- "validTo": flyer valid-to date if visible (ISO format YYYY-MM-DD), null if not shown
+    let rawText: string;
+    let extractionMethod: "text_ocr" | "vision_ai";
 
-Return ONLY the JSON array with no other text, markdown, or explanation.`,
-            },
-          ],
-        },
-      ],
-    });
+    // Step 1: Try free pdf-parse text extraction
+    const pdfText = await extractTextFromPdf(buffer);
 
-    // Extract JSON array from response
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (pdfText) {
+      // PDF has embedded text — use cheap Claude Haiku to parse it (no vision cost)
+      console.log(`[OCR] Text extracted (${pdfText.length} chars) — using Haiku text mode`);
+      rawText = await extractDealsFromText(pdfText);
+      extractionMethod = "text_ocr";
+    } else {
+      // Image-based PDF (scanned flyer) — use Claude Opus full vision
+      console.log("[OCR] No embedded text — falling back to Claude vision");
+      rawText = await extractDealsFromDocument(base64);
+      extractionMethod = "vision_ai";
+    }
+
+    // ── Parse JSON response ───────────────────────────────────────────────────
+
+    const jsonMatch = rawText.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
-      // Update upload record as failed
       if (isSupabaseConfigured() && uploadId) {
         await supabaseAdmin
           .from("flyer_uploads")
@@ -123,9 +186,9 @@ Return ONLY the JSON array with no other text, markdown, or explanation.`,
       source: sourceName,
     }));
 
-    // ── Save deals to Supabase flyer_deals table ──────────────────────────────
+    // ── Save deals to Supabase ────────────────────────────────────────────────
+
     if (isSupabaseConfigured() && deals.length > 0) {
-      // Parse numeric price from string like "$1.99" or "$1.29/lb"
       const parsePrice = (priceStr: string): number | null => {
         const match = priceStr?.match(/[\d.]+/);
         return match ? parseFloat(match[0]) : null;
@@ -145,11 +208,11 @@ Return ONLY the JSON array with no other text, markdown, or explanation.`,
         valid_to: d.validTo || null,
         source: "pdf_upload",
         upload_id: uploadId,
+        extraction_method: extractionMethod,
       }));
 
       await supabaseAdmin.from("flyer_deals").insert(dealRows);
 
-      // Update upload record as completed
       if (uploadId) {
         await supabaseAdmin
           .from("flyer_uploads")
@@ -167,11 +230,12 @@ Return ONLY the JSON array with no other text, markdown, or explanation.`,
       fileName: file.name,
       savedToDb: isSupabaseConfigured() && deals.length > 0,
       uploadId,
+      extractionMethod,        // tells the UI which engine was used
+      textExtracted: !!pdfText, // true = free OCR, false = paid vision
     });
   } catch (error) {
     console.error("Error analyzing flyer:", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to analyze flyer";
+    const message = error instanceof Error ? error.message : "Failed to analyze flyer";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

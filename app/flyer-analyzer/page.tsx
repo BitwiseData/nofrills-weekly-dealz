@@ -17,6 +17,7 @@ interface FileStatus {
   status: "pending" | "processing" | "done" | "error";
   error?: string;
   dealsFound?: number;
+  extractionMethod?: "text_ocr" | "vision_ai";
 }
 
 const CATEGORY_EMOJIS: Record<string, string> = {
@@ -103,7 +104,7 @@ export default function FlyerAnalyzer() {
         const res = await fetch("/api/analyze-flyers", { method: "POST", body: formData });
 
         // Safely parse response — handle non-JSON (413, 500, etc.)
-        let data: { deals?: ExtractedDeal[]; error?: string } = {};
+        let data: { deals?: ExtractedDeal[]; error?: string; extractionMethod?: "text_ocr" | "vision_ai"; textExtracted?: boolean } = {};
         try {
           data = await res.json();
         } catch {
@@ -126,7 +127,7 @@ export default function FlyerAnalyzer() {
           successCount++;
           setFileStatuses((prev) =>
             prev.map((s, idx) =>
-              idx === i ? { ...s, status: "done", dealsFound: data.deals!.length } : s
+              idx === i ? { ...s, status: "done", dealsFound: data.deals!.length, extractionMethod: data.extractionMethod } : s
             )
           );
         }
@@ -227,7 +228,7 @@ export default function FlyerAnalyzer() {
 
       <div style={{ background: "#fea319" }} className="py-3 text-center">
         <p className="text-white font-semibold text-sm">
-          🤖 Powered by Claude AI · Each PDF analyzed separately for best results
+          📝 Free OCR for text PDFs · 🤖 Claude AI Vision for image/scanned flyers
         </p>
       </div>
 
@@ -302,7 +303,14 @@ export default function FlyerAnalyzer() {
                         ({(f.size / 1024 / 1024).toFixed(1)} MB{isOversized ? " — TOO LARGE" : ""})
                       </span>
                       {status?.status === "done" && (
-                        <span className="text-xs text-green-700 font-semibold">{status.dealsFound} deals found</span>
+                        <>
+                          <span className="text-xs text-green-700 font-semibold">{status.dealsFound} deals found</span>
+                          {status.extractionMethod === "text_ocr" ? (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">📝 Free OCR</span>
+                          ) : status.extractionMethod === "vision_ai" ? (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700">🤖 AI Vision</span>
+                          ) : null}
+                        </>
                       )}
                       {status?.error && (
                         <span className="text-xs text-red-500">{status.error}</span>
